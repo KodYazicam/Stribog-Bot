@@ -1,0 +1,17 @@
+node_modules/
+.env
+*.log
+npm-debug.log*
+.DS_Store
+Thumbs.db
+*.tmp
+*.temp
+.idea/
+.vscode/
+*.sublime-*
+package-lock.json
+yarn.lock
+dist/
+build/
+coverage/
+.nyc_output/

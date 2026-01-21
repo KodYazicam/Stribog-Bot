@@ -1,0 +1,31 @@
+{
+  "name": "stribog",
+  "version": "1.0.0",
+  "description": "Full-featured Discord bot with moderation, utility, fun commands and more",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "deploy": "node src/deploy-commands.js",
+    "dev": "nodemon src/index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Veleslobo/Stribog-Bot.git"
+  },
+  "author": "VelesLobo <batuhanaramaz@gmail.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/Veleslobo/Stribog-Bot/issues"
+  },
+  "homepage": "https://github.com/Veleslobo/Stribog-Bot#readme",
+  "dependencies": {
+    "discord.js": "^14.14.1",
+    "dotenv": "^16.3.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.2"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
