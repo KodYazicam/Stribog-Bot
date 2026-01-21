@@ -1,4 +1,5 @@
 const { ActivityType } = require('discord.js');
+const { startScheduler } = require('../utils/scheduler');
 
 module.exports = {
     name: 'ready',
@@ -6,6 +7,9 @@ module.exports = {
     execute(client) {
         console.log(`Logged in as ${client.user.tag}`);
         console.log(`Serving ${client.guilds.cache.size} servers`);
+        console.log(`Loaded ${client.commands.size} commands`);
+        
+        startScheduler(client);
         
         client.user.setPresence({
             activities: [{
@@ -19,7 +23,8 @@ module.exports = {
             const activities = [
                 { name: `/help | ${client.guilds.cache.size} servers`, type: ActivityType.Watching },
                 { name: `${client.users.cache.size} users`, type: ActivityType.Listening },
-                { name: 'discord.js v14', type: ActivityType.Playing }
+                { name: 'discord.js v14', type: ActivityType.Playing },
+                { name: 'Stribog - Wind God', type: ActivityType.Playing }
             ];
             
             const activity = activities[Math.floor(Math.random() * activities.length)];

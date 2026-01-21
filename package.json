@@ -19,6 +19,7 @@
   },
   "homepage": "https://github.com/Veleslobo/Stribog-Bot#readme",
   "dependencies": {
+    "better-sqlite3": "^9.2.2",
     "discord.js": "^14.14.1",
     "dotenv": "^16.3.1"
   },

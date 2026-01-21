@@ -1,100 +1,152 @@
-# Stribog
+# 🌪️ Stribog Discord Bot
 
-A full-featured Discord bot built with Discord.js v14. Named after the Slavic god of wind, Stribog brings swift moderation, utility commands, and fun features to your server.
+<div align="center">
+  <img src="https://img.shields.io/badge/discord.js-v14-5865F2?style=for-the-badge&logo=discord&logoColor=white" />
+  <img src="https://img.shields.io/badge/Node.js-18+-339933?style=for-the-badge&logo=node.js&logoColor=white" />
+  <img src="https://img.shields.io/badge/SQLite-Database-003B57?style=for-the-badge&logo=sqlite&logoColor=white" />
+  <img src="https://img.shields.io/badge/License-MIT-yellow?style=for-the-badge" />
+</div>
 
-## Features
+<br>
 
-### Moderation
-- **Ban** - Permanently ban members with optional message deletion
-- **Kick** - Remove members from the server
-- **Timeout** - Temporarily mute members (1 min to 28 days)
-- **Warn** - Send warnings to members via DM
-- **Clear** - Bulk delete messages with optional user filter
+> Named after **Stribog**, the Slavic god of wind, storms, and air. This bot brings powerful features to your Discord server like the unstoppable wind.
 
-### Information
-- **User Info** - Display detailed user information including roles, join date, and badges
-- **Server Info** - Show comprehensive server statistics
-- **Bot Info** - View bot statistics, uptime, and system information
-- **Avatar** - Get user avatars in multiple formats with download links
+## ✨ Features
 
-### Fun
-- **8Ball** - Ask the magic 8-ball a question
-- **Coinflip** - Flip a coin
-- **Dice** - Roll dice with customizable sides and count
-- **Poll** - Create interactive polls with up to 5 options
+### 🔨 Moderation (12 Commands)
+| Command | Description |
+|---------|-------------|
+| `/ban` | Ban a user from the server |
+| `/kick` | Kick a user from the server |
+| `/timeout` | Timeout a user |
+| `/warn` | Warn a user |
+| `/clear` | Delete messages in bulk |
+| `/unban` | Unban a user |
+| `/slowmode` | Set channel slowmode |
+| `/lock` | Lock a channel |
+| `/unlock` | Unlock a channel |
+| `/softban` | Ban and immediately unban (clears messages) |
+| `/nuke` | Clone and delete a channel |
+| `/role` | Add or remove roles from users |
 
-### Utility
-- **Ping** - Check bot and API latency
-- **Help** - Interactive help menu with category selection
-- **Invite** - Get bot invite link
-- **Embed** - Create custom embed messages
+### 📊 Information (4 Commands)
+| Command | Description |
+|---------|-------------|
+| `/userinfo` | Get information about a user |
+| `/serverinfo` | Get server information |
+| `/botinfo` | Get bot statistics and info |
+| `/avatar` | Get user's avatar |
 
-## Requirements
+### 🎮 Fun (7 Commands)
+| Command | Description |
+|---------|-------------|
+| `/8ball` | Ask the magic 8ball |
+| `/coinflip` | Flip a coin |
+| `/dice` | Roll dice |
+| `/poll` | Create a poll |
+| `/rps` | Play Rock Paper Scissors |
+| `/trivia` | Play trivia games |
+| `/meme` | Get random memes from Reddit |
 
-- Node.js 18.0.0 or higher
-- Discord.js v14
-- A Discord bot token
+### 🛠️ Utility (7 Commands)
+| Command | Description |
+|---------|-------------|
+| `/ping` | Check bot latency |
+| `/help` | View all commands |
+| `/invite` | Get bot invite link |
+| `/embed` | Create custom embeds |
+| `/reminder` | Set reminders |
+| `/calc` | Calculate math expressions |
+| `/weather` | Get weather information |
 
-## Installation
+### 💰 Economy (8 Commands)
+| Command | Description |
+|---------|-------------|
+| `/balance` | Check your balance |
+| `/daily` | Claim daily reward |
+| `/work` | Work to earn coins |
+| `/give` | Give coins to another user |
+| `/leaderboard` | View economy leaderboard |
+| `/deposit` | Deposit coins to bank |
+| `/withdraw` | Withdraw coins from bank |
+| `/shop` | View and buy items |
 
-1. Clone the repository:
+### 📈 Leveling (3 Commands)
+| Command | Description |
+|---------|-------------|
+| `/rank` | View your or someone's rank |
+| `/xpleaderboard` | View XP leaderboard |
+| `/setxp` | Set user's XP (Admin) |
+
+### 🎉 Giveaway System
+| Command | Description |
+|---------|-------------|
+| `/giveaway start` | Start a new giveaway |
+| `/giveaway end` | End a giveaway early |
+| `/giveaway reroll` | Reroll giveaway winners |
+
+### 🎫 Ticket System
+| Command | Description |
+|---------|-------------|
+| `/ticket setup` | Setup the ticket system |
+| `/ticket panel` | Send a ticket panel |
+| `/ticket close` | Close a ticket |
+| `/ticket add` | Add user to ticket |
+| `/ticket remove` | Remove user from ticket |
+
+### ⚙️ Admin (2 Commands)
+| Command | Description |
+|---------|-------------|
+| `/automod` | Configure automod settings |
+| `/setlog` | Configure logging channels |
+
+### 🛡️ AutoMod Features
+- Anti-link protection
+- Anti-spam protection
+- Bad words filter
+- Excessive caps filter
+- Mass mentions filter
+- Domain whitelist
+
+### 📝 Logging System
+- Message edit/delete logs
+- Member join/leave logs
+- Role changes
+- Nickname changes
+- Mod action logs
+- Ticket logs
+
+## 📦 Installation
+
+### Prerequisites
+- Node.js 18 or higher
+- npm or yarn
+
+### Setup
+
+1. Clone the repository
 ```bash
 git clone https://github.com/Veleslobo/Stribog-Bot.git
 cd Stribog-Bot
 ```
 
-2. Install dependencies:
+2. Install dependencies
 ```bash
 npm install
 ```
 
-3. Create a `.env` file based on `.env.example`:
-```bash
-cp .env.example .env
-```
-
-4. Configure your `.env` file:
+3. Create a `.env` file
 ```env
 TOKEN=your_bot_token_here
 CLIENT_ID=your_client_id_here
-GUILD_ID=your_guild_id_here
 ```
 
-## Getting Your Bot Token
-
-1. Go to the [Discord Developer Portal](https://discord.com/developers/applications)
-2. Click "New Application" and give it a name
-3. Go to the "Bot" section
-4. Click "Reset Token" to get your bot token
-5. Enable the following Privileged Gateway Intents:
-   - Presence Intent
-   - Server Members Intent
-   - Message Content Intent
-
-## Inviting the Bot
-
-1. Go to the "OAuth2" section in the Developer Portal
-2. Select "URL Generator"
-3. Select the following scopes:
-   - `bot`
-   - `applications.commands`
-4. Select the required permissions (Administrator recommended for full functionality)
-5. Copy the generated URL and open it in your browser
-
-## Usage
-
-### Deploy Commands
-
-Before running the bot for the first time, deploy the slash commands:
-
+4. Deploy slash commands
 ```bash
 npm run deploy
 ```
 
-**Note:** Guild commands update instantly. Global commands may take up to an hour to propagate.
-
-### Start the Bot
-
+5. Start the bot
 ```bash
 npm start
 ```
@@ -104,107 +156,83 @@ For development with auto-restart:
 npm run dev
 ```
 
-## Project Structure
+## 🗂️ Project Structure
 
 ```
 stribog/
 ├── src/
 │   ├── commands/
-│   │   ├── moderation/
-│   │   │   ├── ban.js
-│   │   │   ├── kick.js
-│   │   │   ├── timeout.js
-│   │   │   ├── warn.js
-│   │   │   └── clear.js
-│   │   ├── info/
-│   │   │   ├── userinfo.js
-│   │   │   ├── serverinfo.js
-│   │   │   ├── botinfo.js
-│   │   │   └── avatar.js
-│   │   ├── fun/
-│   │   │   ├── 8ball.js
-│   │   │   ├── coinflip.js
-│   │   │   ├── dice.js
-│   │   │   └── poll.js
-│   │   └── utility/
-│   │       ├── ping.js
-│   │       ├── help.js
-│   │       ├── invite.js
-│   │       └── embed.js
-│   ├── events/
-│   │   ├── ready.js
-│   │   ├── interactionCreate.js
-│   │   └── guildMemberAdd.js
-│   ├── menus/
-│   │   └── help.js
-│   ├── config/
-│   │   └── config.js
-│   ├── index.js
+│   │   ├── admin/       # Admin commands
+│   │   ├── economy/     # Economy commands
+│   │   ├── fun/         # Fun commands
+│   │   ├── giveaway/    # Giveaway commands
+│   │   ├── info/        # Information commands
+│   │   ├── leveling/    # Leveling commands
+│   │   ├── moderation/  # Moderation commands
+│   │   ├── ticket/      # Ticket commands
+│   │   └── utility/     # Utility commands
+│   ├── events/          # Discord events
+│   ├── buttons/         # Button handlers
+│   ├── menus/           # Select menu handlers
+│   ├── utils/           # Utility functions
+│   │   ├── database.js  # SQLite database
+│   │   └── scheduler.js # Scheduled tasks
+│   ├── config/          # Configuration
+│   ├── index.js         # Main entry point
 │   └── deploy-commands.js
+├── data/                # SQLite database storage
 ├── .env.example
 ├── .gitignore
 ├── package.json
 └── README.md
 ```
 
-## Adding New Commands
-
-1. Create a new file in the appropriate category folder under `src/commands/`
-2. Use this template:
-
-```javascript
-const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
-const { colors } = require('../../config/config');
-
-module.exports = {
-    data: new SlashCommandBuilder()
-        .setName('commandname')
-        .setDescription('Command description'),
-    
-    cooldown: 3,
-    
-    async execute(interaction, client) {
-        // Command logic here
-    }
-};
-```
-
-3. Run `npm run deploy` to register the new command
-
-## Configuration
+## 🔧 Configuration
 
 Edit `src/config/config.js` to customize:
+- Embed colors
+- Cooldown settings
+- Leveling XP rates
+- Economy settings
+- And more...
 
-- **colors** - Embed colors for different message types
-- **emojis** - Default emojis used in responses
-- **cooldown** - Default command cooldown in seconds
+## 📊 Database
 
-## Permissions
+The bot uses SQLite with the following tables:
+- `users` - User economy data
+- `guilds` - Server settings
+- `warnings` - User warnings
+- `giveaways` - Giveaway data
+- `giveaway_entries` - Giveaway participants
+- `tickets` - Ticket data
+- `reminders` - User reminders
+- `user_guild_data` - Per-server user XP/levels
+- `shop_items` - Server shop items
+- `inventory` - User inventories
 
-The bot requires the following permissions for full functionality:
+## 🤝 Contributing
 
-- Administrator (recommended)
+1. Fork the repository
+2. Create a feature branch
+3. Commit your changes
+4. Push to the branch
+5. Open a Pull Request
 
-Or individually:
-- Send Messages
-- Embed Links
-- Read Message History
-- Add Reactions
-- Manage Messages
-- Kick Members
-- Ban Members
-- Moderate Members
+## 📄 License
 
-## Support
+This project is licensed under the MIT License.
 
-For issues and feature requests, please open an issue on GitHub.
+## 👤 Author
 
-## Contact
-
-- GitHub: [VelesLobo](https://github.com/VelesLobo)
+**VelesLobo**
+- GitHub: [@VelesLobo](https://github.com/VelesLobo)
 - Email: batuhanaramaz@gmail.com
 - Instagram: [@4veles](https://instagram.com/4veles)
 
-## License
+---
 
-This project is licensed under the MIT License.
+<div align="center">
+  <b>🌪️ Stribog - The Wind of Discord 🌪️</b>
+  <br>
+  <sub>Built with ❤️ using Discord.js v14</sub>
+</div>
