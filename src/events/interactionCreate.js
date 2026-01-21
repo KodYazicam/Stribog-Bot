@@ -1,5 +1,47 @@
-const { Collection, EmbedBuilder } = require('discord.js');
+const { Collection, EmbedBuilder, PermissionFlagsBits } = require('discord.js');
 const { colors, cooldown: defaultCooldown } = require('../config/config');
+const { getCommandPermissions, isCommandDisabled } = require('../utils/database');
+
+function checkPermissions(interaction, commandName) {
+    if (!interaction.guild) return { allowed: true };
+    
+    if (interaction.member.permissions.has(PermissionFlagsBits.Administrator)) {
+        return { allowed: true };
+    }
+
+    const disabled = isCommandDisabled.get(interaction.guild.id, commandName, interaction.channel.id);
+    if (disabled) {
+        return { allowed: false, reason: 'disabled' };
+    }
+
+    const permissions = getCommandPermissions.all(interaction.guild.id, commandName);
+    
+    if (permissions.length === 0) {
+        return { allowed: true };
+    }
+
+    const memberRoles = interaction.member.roles.cache.map(r => r.id);
+    
+    for (const perm of permissions) {
+        if (memberRoles.includes(perm.role_id)) {
+            if (perm.permission_type === 'deny') {
+                return { allowed: false, reason: 'denied' };
+            }
+        }
+    }
+
+    const hasAllowedRole = permissions.some(p =>
+        p.permission_type === 'allow' && memberRoles.includes(p.role_id)
+    );
+
+    const hasAnyAllowRule = permissions.some(p => p.permission_type === 'allow');
+
+    if (hasAnyAllowRule && !hasAllowedRole) {
+        return { allowed: false, reason: 'not_allowed' };
+    }
+
+    return { allowed: true };
+}
 
 module.exports = {
     name: 'interactionCreate',
@@ -10,6 +52,25 @@ module.exports = {
             if (!command) {
                 return interaction.reply({
                     content: 'This command no longer exists.',
+                    ephemeral: true
+                });
+            }
+
+            const permCheck = checkPermissions(interaction, interaction.commandName);
+            if (!permCheck.allowed) {
+                let message = 'You do not have permission to use this command.';
+                if (permCheck.reason === 'disabled') {
+                    message = 'This command is disabled in this channel/server.';
+                } else if (permCheck.reason === 'denied') {
+                    message = 'Your role is denied from using this command.';
+                }
+
+                return interaction.reply({
+                    embeds: [
+                        new EmbedBuilder()
+                            .setColor(colors.danger)
+                            .setDescription(`❌ ${message}`)
+                    ],
                     ephemeral: true
                 });
             }

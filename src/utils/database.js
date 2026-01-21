@@ -117,6 +117,23 @@ db.exec(`
         entered_at INTEGER NOT NULL,
         UNIQUE(giveaway_id, user_id)
     );
+
+    CREATE TABLE IF NOT EXISTS command_permissions (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        guild_id TEXT NOT NULL,
+        command_name TEXT NOT NULL,
+        role_id TEXT NOT NULL,
+        permission_type TEXT DEFAULT 'allow',
+        UNIQUE(guild_id, command_name, role_id)
+    );
+
+    CREATE TABLE IF NOT EXISTS disabled_commands (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        guild_id TEXT NOT NULL,
+        command_name TEXT NOT NULL,
+        channel_id TEXT,
+        UNIQUE(guild_id, command_name, channel_id)
+    );
 `);
 
 const getUser = db.prepare('SELECT * FROM users WHERE id = ?');
@@ -176,6 +193,17 @@ const updateUserCoins = db.prepare('UPDATE users SET balance = balance + ? WHERE
 
 const getUserGuildDataByGuild = db.prepare('SELECT * FROM user_guild_data WHERE guild_id = ? AND user_id = ?');
 
+const getCommandPermissions = db.prepare('SELECT * FROM command_permissions WHERE guild_id = ? AND command_name = ?');
+const getAllCommandPermissions = db.prepare('SELECT * FROM command_permissions WHERE guild_id = ?');
+const addCommandPermission = db.prepare('INSERT OR REPLACE INTO command_permissions (guild_id, command_name, role_id, permission_type) VALUES (?, ?, ?, ?)');
+const removeCommandPermission = db.prepare('DELETE FROM command_permissions WHERE guild_id = ? AND command_name = ? AND role_id = ?');
+const clearCommandPermissions = db.prepare('DELETE FROM command_permissions WHERE guild_id = ? AND command_name = ?');
+
+const getDisabledCommands = db.prepare('SELECT * FROM disabled_commands WHERE guild_id = ?');
+const isCommandDisabled = db.prepare('SELECT * FROM disabled_commands WHERE guild_id = ? AND command_name = ? AND (channel_id IS NULL OR channel_id = ?)');
+const disableCommand = db.prepare('INSERT OR IGNORE INTO disabled_commands (guild_id, command_name, channel_id) VALUES (?, ?, ?)');
+const enableCommand = db.prepare('DELETE FROM disabled_commands WHERE guild_id = ? AND command_name = ? AND (channel_id IS NULL OR channel_id = ?)');
+
 module.exports = {
     db,
     getUser,
@@ -222,5 +250,14 @@ module.exports = {
     updateUserXP,
     updateUserLevel,
     updateUserCoins,
-    getUserGuildDataByGuild
+    getUserGuildDataByGuild,
+    getCommandPermissions,
+    getAllCommandPermissions,
+    addCommandPermission,
+    removeCommandPermission,
+    clearCommandPermissions,
+    getDisabledCommands,
+    isCommandDisabled,
+    disableCommand,
+    enableCommand
 };
