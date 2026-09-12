@@ -867,14 +867,9 @@ const jobs = [
 
 ### How do I change the XP formula?
 
-1. Open `src/events/messageCreate.js`
-2. Find the XP calculation:
+Edit `src/config/config.js` (`leveling.xpPerMessage`, `xpCooldown`, `baseXP`, `xpMultiplier`) and `src/utils/leveling.js`. Rank, setxp, and message XP all share that curve. Do **not** use `level * 100` in command files.
 
-```javascript
-const xpGain = Math.floor(Math.random() * 10) + 15;
-```
-
-3. Modify the formula as needed
+Giveaways store entries in SQLite (`giveaway_entries`). Ending / rerolling does **not** use 🎉 reactions. Welcome messages use `welcome_channel` on the guild row (or the system channel).
 
 ### How do I disable a feature?
 
