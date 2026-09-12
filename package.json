@@ -10,14 +10,14 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Veleslobo/Stribog-Bot.git"
+    "url": "git+https://github.com/KodYazicam/Stribog-Bot.git"
   },
-  "author": "VelesLobo <batuhanaramaz@gmail.com>",
+  "author": "KodYazicam <https://github.com/KodYazicam>",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/Veleslobo/Stribog-Bot/issues"
+    "url": "https://github.com/KodYazicam/Stribog-Bot/issues"
   },
-  "homepage": "https://github.com/Veleslobo/Stribog-Bot#readme",
+  "homepage": "https://github.com/KodYazicam/Stribog-Bot#readme",
   "dependencies": {
     "better-sqlite3": "^9.2.2",
     "discord.js": "^14.14.1",

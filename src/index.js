@@ -1,7 +1,12 @@
 const { Client, GatewayIntentBits, Collection, Partials } = require('discord.js');
-const { readdirSync } = require('fs');
+const { readdirSync, statSync } = require('fs');
 const { join } = require('path');
 require('dotenv').config();
+
+if (!process.env.TOKEN) {
+    console.error('Missing TOKEN. Copy .env.example to .env and fill in your bot token.');
+    process.exit(1);
+}
 
 const client = new Client({
     intents: [
@@ -31,6 +36,7 @@ const loadCommands = () => {
 
     for (const folder of commandFolders) {
         const folderPath = join(commandsPath, folder);
+        if (!statSync(folderPath).isDirectory()) continue;
         const commandFiles = readdirSync(folderPath).filter(file => file.endsWith('.js'));
 
         for (const file of commandFiles) {

@@ -32,7 +32,7 @@ module.exports = {
             .setTitle(client.user.username)
             .setThumbnail(client.user.displayAvatarURL({ dynamic: true, size: 512 }))
             .addFields(
-                { name: 'Developer', value: 'VelesLobo', inline: true },
+                { name: 'Developer', value: '[KodYazicam](https://github.com/KodYazicam)', inline: true },
                 { name: 'Bot ID', value: client.user.id, inline: true },
                 { name: 'Created', value: `<t:${Math.floor(client.user.createdTimestamp / 1000)}:R>`, inline: true },
                 { name: 'Servers', value: `${client.guilds.cache.size}`, inline: true },

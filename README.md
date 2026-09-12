@@ -141,7 +141,7 @@ Before you start, make sure you have:
    ```
 3. Clone the repository:
    ```bash
-   git clone https://github.com/Veleslobo/Stribog-Bot.git
+   git clone https://github.com/KodYazicam/Stribog-Bot.git
    ```
 4. Enter the bot folder:
    ```bash
@@ -150,7 +150,7 @@ Before you start, make sure you have:
 
 **Option B: Direct Download**
 
-1. Go to [https://github.com/Veleslobo/Stribog-Bot](https://github.com/Veleslobo/Stribog-Bot)
+1. Go to [https://github.com/KodYazicam/Stribog-Bot](https://github.com/KodYazicam/Stribog-Bot)
 2. Click the green **"Code"** button
 3. Click **"Download ZIP"**
 4. Extract the ZIP file to your desired location
@@ -908,14 +908,14 @@ Contributions are welcome! Feel free to:
 
 ## 📧 Support
 
-- **GitHub Issues:** [Report a bug](https://github.com/Veleslobo/Stribog-Bot/issues)
+- **GitHub Issues:** [Report a bug](https://github.com/KodYazicam/Stribog-Bot/issues)
 - **Discord:** Coming soon
 
 ---
 
 <div align="center">
 
-**Made with ❤️ by [VelesLobo](https://github.com/Veleslobo)**
+**Made with ❤️ by [KodYazicam](https://github.com/KodYazicam)**
 
 ⭐ Star this repository if you found it helpful!
 
