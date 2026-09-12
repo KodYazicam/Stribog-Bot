@@ -1,6 +1,7 @@
 const { Events, EmbedBuilder } = require('discord.js');
-const { colors, leveling } = require('../config/config');
-const { getUserGuildData, updateUserXP, updateUserLevel, getGuild, insertGuild, updateGuildSetting } = require('../utils/database');
+const { colors } = require('../config/config');
+const { getUserGuildData, updateUserXP, updateUserLevel, getGuild, insertGuild } = require('../utils/database');
+const { xpRequiredForLevel, randomXpGain, xpCooldown } = require('../utils/leveling');
 
 const xpCooldowns = new Map();
 const antiSpamMap = new Map();
@@ -33,7 +34,7 @@ async function handleLeveling(message, client) {
     const now = Date.now();
     const cooldown = xpCooldowns.get(key);
 
-    if (cooldown && now - cooldown < leveling.xpCooldown) return;
+    if (cooldown && now - cooldown < xpCooldown) return;
 
     xpCooldowns.set(key, now);
 
@@ -46,10 +47,10 @@ async function handleLeveling(message, client) {
         if (!userData) return;
     }
 
-    const xpGain = Math.floor(Math.random() * (leveling.xpPerMessage[1] - leveling.xpPerMessage[0] + 1)) + leveling.xpPerMessage[0];
+    const xpGain = randomXpGain();
     const newXP = userData.xp + xpGain;
     const currentLevel = userData.level;
-    const xpNeeded = calculateXPForLevel(currentLevel + 1);
+    const xpNeeded = xpRequiredForLevel(currentLevel + 1);
 
     updateUserXP.run(newXP, message.guild.id, message.author.id);
 
@@ -229,6 +230,4 @@ async function handleAutoMod(message, client) {
     }
 }
 
-function calculateXPForLevel(level) {
-    return Math.floor(leveling.baseXP * Math.pow(leveling.xpMultiplier, level - 1));
-}
+

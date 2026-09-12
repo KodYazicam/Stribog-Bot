@@ -3,11 +3,9 @@ const { colors } = require('../config/config');
 const { getGiveaway, getGiveawayEntries, addGiveawayEntry, removeGiveawayEntry, checkGiveawayEntry } = require('../utils/database');
 
 module.exports = {
-    async execute(interaction, client, args) {
-        const action = args[0];
-        const giveawayId = args[1] || interaction.customId.split('_')[2];
-
-        const giveaway = getGiveaway.get(giveawayId);
+    async execute(interaction) {
+        const messageId = interaction.message?.id;
+        const giveaway = messageId ? getGiveaway.get(messageId) : null;
 
         if (!giveaway) {
             return interaction.reply({
@@ -20,7 +18,7 @@ module.exports = {
             });
         }
 
-        if (giveaway.status !== 'active') {
+        if (giveaway.ended) {
             return interaction.reply({
                 embeds: [
                     new EmbedBuilder()
@@ -31,53 +29,46 @@ module.exports = {
             });
         }
 
-        if (action === 'enter' || interaction.customId.startsWith('giveaway_enter')) {
-            const existingEntry = checkGiveawayEntry.get(giveawayId, interaction.user.id);
+        const existingEntry = checkGiveawayEntry.get(giveaway.id, interaction.user.id);
 
-            if (existingEntry) {
-                removeGiveawayEntry.run(giveawayId, interaction.user.id);
-
-                const entries = getGiveawayEntries.all(giveawayId);
-
-                await interaction.reply({
-                    embeds: [
-                        new EmbedBuilder()
-                            .setColor(colors.warning)
-                            .setDescription(`You have left the giveaway for **${giveaway.prize}**`)
-                            .addFields({ name: 'Current Entries', value: `${entries.length}`, inline: true })
-                    ],
-                    ephemeral: true
-                });
-            } else {
-                addGiveawayEntry.run(giveawayId, interaction.user.id, Date.now());
-
-                const entries = getGiveawayEntries.all(giveawayId);
-
-                await interaction.reply({
-                    embeds: [
-                        new EmbedBuilder()
-                            .setColor(colors.success)
-                            .setTitle('🎉 Entered!')
-                            .setDescription(`You have entered the giveaway for **${giveaway.prize}**`)
-                            .addFields({ name: 'Current Entries', value: `${entries.length}`, inline: true })
-                    ],
-                    ephemeral: true
-                });
-            }
-
-            const entries = getGiveawayEntries.all(giveawayId);
-            const channel = await client.channels.fetch(giveaway.channel_id).catch(() => null);
-            if (channel) {
-                const message = await channel.messages.fetch(giveaway.message_id).catch(() => null);
-                if (message) {
-                    const embed = EmbedBuilder.from(message.embeds[0]);
-                    const entryField = embed.data.fields.find(f => f.name === 'Entries');
-                    if (entryField) {
-                        entryField.value = `${entries.length}`;
-                    }
-                    await message.edit({ embeds: [embed] });
-                }
-            }
+        if (existingEntry) {
+            removeGiveawayEntry.run(giveaway.id, interaction.user.id);
+            const entries = getGiveawayEntries.all(giveaway.id);
+            await interaction.reply({
+                embeds: [
+                    new EmbedBuilder()
+                        .setColor(colors.warning)
+                        .setDescription(`You have left the giveaway for **${giveaway.prize}**`)
+                        .addFields({ name: 'Current Entries', value: `${entries.length}`, inline: true })
+                ],
+                ephemeral: true
+            });
+            await updateEntryCount(interaction, entries.length);
+            return;
         }
+
+        addGiveawayEntry.run(giveaway.id, interaction.user.id, Date.now());
+        const entries = getGiveawayEntries.all(giveaway.id);
+        await interaction.reply({
+            embeds: [
+                new EmbedBuilder()
+                    .setColor(colors.success)
+                    .setTitle('🎉 Entered!')
+                    .setDescription(`You have entered the giveaway for **${giveaway.prize}**`)
+                    .addFields({ name: 'Current Entries', value: `${entries.length}`, inline: true })
+            ],
+            ephemeral: true
+        });
+        await updateEntryCount(interaction, entries.length);
     }
 };
+
+async function updateEntryCount(interaction, count) {
+    try {
+        const row = interaction.message.components[0];
+        if (!row) return;
+        const button = row.components[0];
+        button.setLabel(`Enter (${count})`);
+        await interaction.message.edit({ components: [row] });
+    } catch {}
+}

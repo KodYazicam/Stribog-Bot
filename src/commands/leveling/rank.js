@@ -1,6 +1,7 @@
 const { SlashCommandBuilder, EmbedBuilder, AttachmentBuilder } = require('discord.js');
 const { colors } = require('../../config/config');
 const { getUserGuildData, insertUserGuildData, getLeaderboard } = require('../../utils/database');
+const { xpRequiredForLevel } = require('../../utils/leveling');
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -22,8 +23,11 @@ module.exports = {
         const leaderboard = getLeaderboard.all(interaction.guild.id, 1000);
         const rank = leaderboard.findIndex(u => u.user_id === target.id) + 1;
 
-        const xpForNextLevel = userData.level * 100;
-        const progress = Math.floor((userData.xp / xpForNextLevel) * 100);
+        const xpForNextLevel = xpRequiredForLevel(userData.level + 1);
+        const xpForThisLevel = xpRequiredForLevel(userData.level);
+        const spanned = Math.max(xpForNextLevel - xpForThisLevel, 1);
+        const intoLevel = Math.max(userData.xp - xpForThisLevel, 0);
+        const progress = Math.min(100, Math.floor((intoLevel / spanned) * 100));
         const progressBar = createProgressBar(progress);
 
         const embed = new EmbedBuilder()

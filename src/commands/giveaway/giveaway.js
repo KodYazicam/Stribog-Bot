@@ -1,6 +1,6 @@
 const { SlashCommandBuilder, EmbedBuilder, PermissionFlagsBits, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const { colors } = require('../../config/config');
-const { insertGiveaway, getGiveaway, endGiveaway } = require('../../utils/database');
+const { insertGiveaway, getGiveaway, getGiveawayEntries, endGiveaway } = require('../../utils/database');
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -172,21 +172,7 @@ module.exports = {
             const message = await channel.messages.fetch(messageId).catch(() => null);
             if (!message) return;
 
-            const reaction = message.reactions.cache.get('🎉');
-            if (!reaction) {
-                return interaction.reply({
-                    embeds: [
-                        new EmbedBuilder()
-                            .setColor(colors.danger)
-                            .setDescription('No entries found.')
-                    ],
-                    ephemeral: true
-                });
-            }
-
-            const users = await reaction.users.fetch();
-            const entries = users.filter(u => !u.bot).map(u => u);
-
+            const entries = getGiveawayEntries.all(giveaway.id);
             if (entries.length === 0) {
                 return interaction.reply({
                     embeds: [
@@ -201,14 +187,14 @@ module.exports = {
             const winner = entries[Math.floor(Math.random() * entries.length)];
 
             await channel.send({
-                content: `🎉 Congratulations ${winner}! You won the reroll for **${giveaway.prize}**!`
+                content: `🎉 Congratulations <@${winner.user_id}>! You won the reroll for **${giveaway.prize}**!`
             });
 
             await interaction.reply({
                 embeds: [
                     new EmbedBuilder()
                         .setColor(colors.success)
-                        .setDescription(`Rerolled! New winner: ${winner}`)
+                        .setDescription(`Rerolled! New winner: <@${winner.user_id}>`)
                 ],
                 ephemeral: true
             });
@@ -258,20 +244,9 @@ async function endGiveawayNow(client, giveaway) {
 
     await message.edit({ embeds: [embed], components: [row] });
 
-    const buttonCollector = message.createMessageComponentCollector({ componentType: 2 });
-    const entries = [];
+    const entries = getGiveawayEntries.all(giveaway.id);
 
-    message.components[0]?.components[0]?.customId === 'giveaway_enter';
-
-    const reaction = message.reactions?.cache?.get('🎉');
-    let users = [];
-    
-    if (reaction) {
-        const fetched = await reaction.users.fetch();
-        users = fetched.filter(u => !u.bot).map(u => u);
-    }
-
-    if (users.length === 0) {
+    if (entries.length === 0) {
         await channel.send({
             embeds: [
                 new EmbedBuilder()
@@ -282,14 +257,9 @@ async function endGiveawayNow(client, giveaway) {
         return;
     }
 
-    const winners = [];
-    const shuffled = users.sort(() => Math.random() - 0.5);
-    
-    for (let i = 0; i < Math.min(giveaway.winners, shuffled.length); i++) {
-        winners.push(shuffled[i]);
-    }
-
-    const winnerMentions = winners.map(w => w.toString()).join(', ');
+    const shuffled = [...entries].sort(() => Math.random() - 0.5);
+    const winners = shuffled.slice(0, Math.min(giveaway.winners, shuffled.length));
+    const winnerMentions = winners.map(w => `<@${w.user_id}>`).join(', ');
 
     await channel.send({
         content: `🎉 Congratulations ${winnerMentions}! You won **${giveaway.prize}**!`,

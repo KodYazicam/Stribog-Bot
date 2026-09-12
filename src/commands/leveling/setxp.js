@@ -1,6 +1,7 @@
 const { SlashCommandBuilder, EmbedBuilder, PermissionFlagsBits } = require('discord.js');
 const { colors } = require('../../config/config');
-const { getUserGuildData, insertUserGuildData, updateUserGuildXP } = require('../../utils/database');
+const { insertUserGuildData, updateUserGuildXP } = require('../../utils/database');
+const { levelFromTotalXp } = require('../../utils/leveling');
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -24,10 +25,7 @@ module.exports = {
         const xp = interaction.options.getInteger('xp');
 
         insertUserGuildData.run(user.id, interaction.guild.id);
-        
-        let userData = getUserGuildData.get(user.id, interaction.guild.id);
-        
-        const level = calculateLevel(xp);
+        const level = levelFromTotalXp(xp);
         
         updateUserGuildXP.run(xp, level, user.id, interaction.guild.id);
 
@@ -43,16 +41,4 @@ module.exports = {
     }
 };
 
-function calculateLevel(xp) {
-    const baseXP = 100;
-    const multiplier = 1.5;
-    let level = 1;
-    let requiredXP = baseXP;
 
-    while (xp >= requiredXP) {
-        level++;
-        requiredXP = Math.floor(baseXP * Math.pow(multiplier, level - 1));
-    }
-
-    return level;
-}
