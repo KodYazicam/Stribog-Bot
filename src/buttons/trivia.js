@@ -55,12 +55,13 @@ module.exports = {
             });
 
             try {
-                const { updateUserCoins, getUserGuildData, insertUserGuildData } = require('../utils/database');
-                let userData = getUserGuildData.get(interaction.guild.id, interaction.user.id);
+                const { updateUserCoins, insertUser, getUserGuildData, insertUserGuildData } = require('../utils/database');
+                insertUser.run(interaction.user.id);
+                let userData = getUserGuildData.get(interaction.user.id, interaction.guild.id);
                 if (!userData) {
-                    insertUserGuildData.run(interaction.user.id, interaction.guild.id, 0, 0, 0);
+                    insertUserGuildData.run(interaction.user.id, interaction.guild.id);
                 }
-                updateUserCoins.run(points, interaction.guild.id, interaction.user.id);
+                updateUserCoins.run(points, interaction.user.id);
             } catch {}
 
         } else {

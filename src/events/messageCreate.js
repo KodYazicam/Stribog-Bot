@@ -12,8 +12,16 @@ module.exports = {
 
         insertGuild.run(message.guild.id);
 
-        await handleLeveling(message, client);
-        await handleAutoMod(message, client);
+        try {
+            await handleLeveling(message, client);
+        } catch (error) {
+            console.error('Leveling error:', error);
+        }
+        try {
+            await handleAutoMod(message, client);
+        } catch (error) {
+            console.error('AutoMod error:', error);
+        }
     }
 };
 
@@ -29,12 +37,13 @@ async function handleLeveling(message, client) {
 
     xpCooldowns.set(key, now);
 
-    const userData = getUserGuildData.get(message.guild.id, message.author.id);
-    
+    let userData = getUserGuildData.get(message.author.id, message.guild.id);
+
     if (!userData) {
         const { insertUserGuildData } = require('../utils/database');
-        insertUserGuildData.run(message.author.id, message.guild.id, 0, 0, 0);
-        return;
+        insertUserGuildData.run(message.author.id, message.guild.id);
+        userData = getUserGuildData.get(message.author.id, message.guild.id);
+        if (!userData) return;
     }
 
     const xpGain = Math.floor(Math.random() * (leveling.xpPerMessage[1] - leveling.xpPerMessage[0] + 1)) + leveling.xpPerMessage[0];
@@ -93,6 +102,7 @@ async function handleAutoMod(message, client) {
     const guildData = getGuild.get(message.guild.id);
     if (!guildData) return;
 
+    if (!message.member) return;
     if (message.member.permissions.has('ManageMessages')) return;
 
     if (guildData.automod_antilink === 1) {
