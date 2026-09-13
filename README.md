@@ -7,7 +7,7 @@
 ![SQLite](https://img.shields.io/badge/SQLite-Database-003B57?style=for-the-badge&logo=sqlite&logoColor=white)
 ![License](https://img.shields.io/badge/License-MIT-yellow?style=for-the-badge)
 
-**A powerful, feature-rich Discord bot with moderation, economy, leveling, giveaways, tickets, and much more!**
+**Moderation, per-guild economy, leveling, giveaways, tickets.** Env var is `TOKEN` (not `DISCORD_TOKEN`). Weather is Open-Meteo — no API key. See [SECURITY.md](./SECURITY.md).
 
 [Features](#-features) • [Installation](#-installation) • [Configuration](#-configuration) • [Commands](#-commands) • [Customization](#-customization)
 
@@ -54,7 +54,7 @@
 - **Balance** - Check your wallet and bank
 - **Daily Rewards** - Claim daily coins
 - **Work** - Earn coins through various jobs
-- **Give** - Transfer coins to other users
+- **Give** - Transfer coins to other users **in this server** (atomic, no dupes)
 - **Deposit/Withdraw** - Manage your bank account
 - **Shop** - Create and manage server shop items
 - **Leaderboard** - View richest members
@@ -74,8 +74,8 @@
 ### 🎫 Ticket System
 - **Ticket Panels** - Create interactive ticket panels
 - **Categories** - Organize tickets by category
-- **Transcripts** - Save ticket conversations
-- **Staff Controls** - Add/remove users from tickets
+- **Support role** - `/ticket setup` takes `support_role` so staff can see tickets
+- **Staff Controls** - Add/remove users from tickets; close is owner or staff only
 
 ### 📝 Logging System
 - **Message Logs** - Track edited and deleted messages
@@ -248,18 +248,23 @@ Click **"Save Changes"**
 
 ```env
 # Discord Bot Token (from Discord Developer Portal)
-DISCORD_TOKEN=paste_your_bot_token_here
+TOKEN=paste_your_bot_token_here
 
 # Discord Client ID (from Discord Developer Portal)
 CLIENT_ID=paste_your_client_id_here
 
-# Your Discord Server ID (right-click server → Copy Server ID)
+# Your Discord Server ID (right-click server → Copy Server ID) — used by deploy-commands.js
 GUILD_ID=paste_your_server_id_here
 
-# Weather API Key (optional, for /weather command)
-# Get one free at: https://www.weatherapi.com/
-WEATHER_API_KEY=your_weather_api_key_here
+# Your Discord user id (optional)
+OWNER_ID=paste_your_user_id_here
 ```
+
+`/weather` uses [Open-Meteo](https://open-meteo.com/) and needs **no API key**. There is no `WEATHER_API_KEY`.
+
+Economy is **per guild**. `/give` is a SQLite transaction. Tickets need a **support role** (`/ticket setup … support_role:@Staff`) or staff without Administrator cannot see the channel.
+
+`/invite` does **not** request Administrator.
 
 **How to Get Your Server ID:**
 

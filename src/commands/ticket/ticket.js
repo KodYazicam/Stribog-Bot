@@ -19,6 +19,10 @@ module.exports = {
                     option.setName('log_channel')
                         .setDescription('Channel for ticket logs')
                         .addChannelTypes(ChannelType.GuildText)
+                        .setRequired(false))
+                .addRoleOption(option =>
+                    option.setName('support_role')
+                        .setDescription('Staff role that can see tickets')
                         .setRequired(false)))
         .addSubcommand(subcommand =>
             subcommand
@@ -56,11 +60,15 @@ module.exports = {
         if (subcommand === 'setup') {
             const category = interaction.options.getChannel('category');
             const logChannel = interaction.options.getChannel('log_channel');
+            const supportRole = interaction.options.getRole('support_role');
 
             updateGuildSetting('ticket_category').run(category.id, interaction.guild.id);
             
             if (logChannel) {
                 updateGuildSetting('ticket_log_channel').run(logChannel.id, interaction.guild.id);
+            }
+            if (supportRole) {
+                updateGuildSetting('support_role').run(supportRole.id, interaction.guild.id);
             }
 
             const embed = new EmbedBuilder()
@@ -68,7 +76,8 @@ module.exports = {
                 .setTitle('Ticket System Setup')
                 .addFields(
                     { name: 'Category', value: `${category}`, inline: true },
-                    { name: 'Log Channel', value: logChannel ? `${logChannel}` : 'Not set', inline: true }
+                    { name: 'Log Channel', value: logChannel ? `${logChannel}` : 'Not set', inline: true },
+                    { name: 'Support Role', value: supportRole ? `${supportRole}` : 'Not set', inline: true }
                 )
                 .setTimestamp();
 

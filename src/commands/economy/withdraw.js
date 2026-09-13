@@ -1,6 +1,6 @@
 const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
 const { colors } = require('../../config/config');
-const { getUser, insertUser, updateUserBalance, updateUserBank } = require('../../utils/database');
+const { ensureEconomy, updateEconomyBalance, updateEconomyBank } = require('../../utils/database');
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -16,8 +16,10 @@ module.exports = {
     async execute(interaction) {
         const amountStr = interaction.options.getString('amount');
         
-        insertUser.run(interaction.user.id);
-        const userData = getUser.get(interaction.user.id);
+        if (!interaction.guild) {
+            return interaction.reply({ content: 'Economy is per-server. Use this in a guild.', ephemeral: true });
+        }
+        const userData = ensureEconomy(interaction.user.id, interaction.guild.id);
 
         let amount;
         if (amountStr.toLowerCase() === 'all') {
@@ -50,8 +52,8 @@ module.exports = {
         const newBalance = userData.balance + amount;
         const newBank = userData.bank - amount;
 
-        updateUserBalance.run(newBalance, interaction.user.id);
-        updateUserBank.run(newBank, interaction.user.id);
+        updateEconomyBalance.run(newBalance, interaction.user.id, interaction.guild.id);
+        updateEconomyBank.run(newBank, interaction.user.id, interaction.guild.id);
 
         const embed = new EmbedBuilder()
             .setColor(colors.success)

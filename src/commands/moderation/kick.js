@@ -103,6 +103,13 @@ module.exports = {
                 .setTimestamp();
 
             await interaction.reply({ embeds: [embed] });
+            const { sendModLog } = require('../../utils/modlog');
+            await sendModLog(interaction.guild, {
+                title: 'Member Kicked',
+                moderator: interaction.user,
+                target,
+                fields: [{ name: 'Reason', value: reason }]
+            });
         } catch (error) {
             console.error('Kick error:', error);
             await interaction.reply({

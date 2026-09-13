@@ -32,7 +32,11 @@ async function checkGiveaways(client) {
             
             let winners = [];
             if (entries.length > 0) {
-                const shuffled = entries.sort(() => Math.random() - 0.5);
+                const shuffled = [...entries];
+                for (let i = shuffled.length - 1; i > 0; i -= 1) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+                }
                 winners = shuffled.slice(0, Math.min(giveaway.winners, entries.length));
             }
 

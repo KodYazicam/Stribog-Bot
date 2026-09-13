@@ -12,14 +12,25 @@ module.exports = {
         const inviteLink = client.generateInvite({
             scopes: [OAuth2Scopes.Bot, OAuth2Scopes.ApplicationsCommands],
             permissions: [
-                PermissionFlagsBits.Administrator
+                PermissionFlagsBits.ViewChannel,
+                PermissionFlagsBits.SendMessages,
+                PermissionFlagsBits.EmbedLinks,
+                PermissionFlagsBits.ReadMessageHistory,
+                PermissionFlagsBits.UseExternalEmojis,
+                PermissionFlagsBits.AddReactions,
+                PermissionFlagsBits.ManageMessages,
+                PermissionFlagsBits.ModerateMembers,
+                PermissionFlagsBits.KickMembers,
+                PermissionFlagsBits.BanMembers,
+                PermissionFlagsBits.ManageChannels,
+                PermissionFlagsBits.ManageRoles
             ]
         });
 
         const embed = new EmbedBuilder()
             .setColor(colors.primary)
             .setTitle('Invite Me!')
-            .setDescription('Click the button below to add me to your server.')
+            .setDescription('Click the button below to add me to your server. The invite asks for moderation permissions, not Administrator.')
             .setThumbnail(client.user.displayAvatarURL({ dynamic: true }))
             .setTimestamp();
 
@@ -29,12 +40,7 @@ module.exports = {
                     .setLabel('Invite Bot')
                     .setStyle(ButtonStyle.Link)
                     .setURL(inviteLink)
-                    .setEmoji('🔗'),
-                new ButtonBuilder()
-                    .setLabel('Support Server')
-                    .setStyle(ButtonStyle.Link)
-                    .setURL('https://discord.gg/your-support-server')
-                    .setEmoji('💬')
+                    .setEmoji('🔗')
             );
 
         await interaction.reply({ embeds: [embed], components: [row] });

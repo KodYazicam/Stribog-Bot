@@ -1,11 +1,11 @@
 const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
 const { colors } = require('../../config/config');
-const { getUser, insertUser, updateUserBalance } = require('../../utils/database');
+const { transferCoins, ensureEconomy } = require('../../utils/database');
 
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('give')
-        .setDescription('Give coins to another user')
+        .setDescription('Give coins to another user in this server')
         .addUserOption(option =>
             option.setName('user')
                 .setDescription('The user to give coins to')
@@ -19,6 +19,9 @@ module.exports = {
     cooldown: 5,
     
     async execute(interaction) {
+        if (!interaction.guild) {
+            return interaction.reply({ content: 'Economy is per-server. Use this in a guild.', ephemeral: true });
+        }
         const target = interaction.options.getUser('user');
         const amount = interaction.options.getInteger('amount');
 
@@ -44,13 +47,9 @@ module.exports = {
             });
         }
 
-        insertUser.run(interaction.user.id);
-        insertUser.run(target.id);
-
-        const senderData = getUser.get(interaction.user.id);
-        const receiverData = getUser.get(target.id);
-
-        if (senderData.balance < amount) {
+        const ok = transferCoins(interaction.user.id, target.id, interaction.guild.id, amount);
+        if (!ok) {
+            const senderData = ensureEconomy(interaction.user.id, interaction.guild.id);
             return interaction.reply({
                 embeds: [
                     new EmbedBuilder()
@@ -61,19 +60,16 @@ module.exports = {
             });
         }
 
-        const newSenderBalance = senderData.balance - amount;
-        const newReceiverBalance = receiverData.balance + amount;
-
-        updateUserBalance.run(newSenderBalance, interaction.user.id);
-        updateUserBalance.run(newReceiverBalance, target.id);
+        const senderData = ensureEconomy(interaction.user.id, interaction.guild.id);
+        const receiverData = ensureEconomy(target.id, interaction.guild.id);
 
         const embed = new EmbedBuilder()
             .setColor(colors.success)
             .setTitle('💸 Transfer Complete')
             .setDescription(`You gave **${amount.toLocaleString()}** coins to ${target}`)
             .addFields(
-                { name: 'Your New Balance', value: `${newSenderBalance.toLocaleString()} coins`, inline: true },
-                { name: `${target.username}'s New Balance`, value: `${newReceiverBalance.toLocaleString()} coins`, inline: true }
+                { name: 'Your New Balance', value: `${senderData.balance.toLocaleString()} coins`, inline: true },
+                { name: `${target.username}'s New Balance`, value: `${receiverData.balance.toLocaleString()} coins`, inline: true }
             )
             .setTimestamp();
 

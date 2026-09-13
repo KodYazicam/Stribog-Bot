@@ -114,7 +114,13 @@ async function handleAutoMod(message, client) {
             
             let hasBlockedUrl = false;
             for (const url of urls) {
-                const domain = new URL(url).hostname;
+                let domain = '';
+                try {
+                    domain = new URL(url).hostname;
+                } catch {
+                    hasBlockedUrl = true;
+                    break;
+                }
                 if (!whitelistedDomains.some(d => domain.includes(d))) {
                     hasBlockedUrl = true;
                     break;
@@ -140,6 +146,11 @@ async function handleAutoMod(message, client) {
         const key = `${message.guild.id}-${message.author.id}`;
         const now = Date.now();
         
+        if (antiSpamMap.size > 5000) {
+            for (const [mapKey, entry] of antiSpamMap) {
+                if (now - entry.firstMessage > 60000) antiSpamMap.delete(mapKey);
+            }
+        }
         if (!antiSpamMap.has(key)) {
             antiSpamMap.set(key, { count: 1, firstMessage: now });
         } else {

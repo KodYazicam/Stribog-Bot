@@ -1,6 +1,6 @@
 const { SlashCommandBuilder, EmbedBuilder, PermissionFlagsBits, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const { colors } = require('../../config/config');
-const { getShopItems, getShopItem, insertShopItem, deleteShopItem, getUser, insertUser, updateUserBalance } = require('../../utils/database');
+const { getShopItems, getShopItem, insertShopItem, deleteShopItem, ensureEconomy, updateEconomyBalance } = require('../../utils/database');
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -101,8 +101,7 @@ module.exports = {
                 });
             }
 
-            insertUser.run(interaction.user.id);
-            const user = getUser.get(interaction.user.id);
+            const user = ensureEconomy(interaction.user.id, interaction.guild.id);
 
             if (user.balance < item.price) {
                 return interaction.reply({
@@ -115,7 +114,7 @@ module.exports = {
                 });
             }
 
-            updateUserBalance.run(user.balance - item.price, interaction.user.id);
+            updateEconomyBalance.run(user.balance - item.price, interaction.user.id, interaction.guild.id);
 
             let rewardMessage = '';
             if (item.role_id) {

@@ -1,6 +1,7 @@
 const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
 const { colors } = require('../../config/config');
-const { getUser, insertUser, updateUserBalance, updateUserDaily } = require('../../utils/database');
+const { ensureEconomy, updateEconomyBalance, updateEconomyDaily } = require('../../utils/database');
+const { economy } = require('../../config/config');
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -10,12 +11,14 @@ module.exports = {
     cooldown: 5,
     
     async execute(interaction) {
-        insertUser.run(interaction.user.id);
-        const userData = getUser.get(interaction.user.id);
+        if (!interaction.guild) {
+            return interaction.reply({ content: 'Economy is per-server. Use this in a guild.', ephemeral: true });
+        }
+        const userData = ensureEconomy(interaction.user.id, interaction.guild.id);
 
         const now = Date.now();
         const lastClaimed = userData.daily_claimed || 0;
-        const cooldown = 24 * 60 * 60 * 1000;
+        const cooldown = economy.dailyCooldown;
 
         if (now - lastClaimed < cooldown) {
             const timeLeft = cooldown - (now - lastClaimed);
@@ -32,13 +35,13 @@ module.exports = {
             });
         }
 
-        const baseReward = 100;
+        const baseReward = economy.dailyAmount;
         const bonusReward = Math.floor(Math.random() * 100);
         const totalReward = baseReward + bonusReward;
 
         const newBalance = userData.balance + totalReward;
-        updateUserBalance.run(newBalance, interaction.user.id);
-        updateUserDaily.run(now, interaction.user.id);
+        updateEconomyBalance.run(newBalance, interaction.user.id, interaction.guild.id);
+        updateEconomyDaily.run(now, interaction.user.id, interaction.guild.id);
 
         const embed = new EmbedBuilder()
             .setColor(colors.success)

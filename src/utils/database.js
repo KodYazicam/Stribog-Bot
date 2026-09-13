@@ -8,6 +8,8 @@ if (!fs.existsSync(dataDir)) {
 }
 
 const db = new Database(path.join(dataDir, 'bot.db'));
+db.pragma('journal_mode = WAL');
+db.pragma('foreign_keys = ON');
 
 db.exec(`
     CREATE TABLE IF NOT EXISTS users (
@@ -134,7 +136,23 @@ db.exec(`
         channel_id TEXT,
         UNIQUE(guild_id, command_name, channel_id)
     );
+
+    CREATE TABLE IF NOT EXISTS guild_economy (
+        user_id TEXT NOT NULL,
+        guild_id TEXT NOT NULL,
+        balance INTEGER DEFAULT 0,
+        bank INTEGER DEFAULT 0,
+        daily_claimed INTEGER DEFAULT 0,
+        work_cooldown INTEGER DEFAULT 0,
+        PRIMARY KEY (user_id, guild_id)
+    );
 `);
+
+try {
+    db.exec('ALTER TABLE guilds ADD COLUMN support_role TEXT');
+} catch {
+    // already migrated
+}
 
 const getUser = db.prepare('SELECT * FROM users WHERE id = ?');
 const insertUser = db.prepare('INSERT OR IGNORE INTO users (id) VALUES (?)');
@@ -143,9 +161,45 @@ const updateUserBank = db.prepare('UPDATE users SET bank = ? WHERE id = ?');
 const updateUserDaily = db.prepare('UPDATE users SET daily_claimed = ? WHERE id = ?');
 const updateUserWork = db.prepare('UPDATE users SET work_cooldown = ? WHERE id = ?');
 
+const getEconomy = db.prepare('SELECT * FROM guild_economy WHERE user_id = ? AND guild_id = ?');
+const insertEconomy = db.prepare('INSERT OR IGNORE INTO guild_economy (user_id, guild_id) VALUES (?, ?)');
+const updateEconomyBalance = db.prepare('UPDATE guild_economy SET balance = ? WHERE user_id = ? AND guild_id = ?');
+const updateEconomyBank = db.prepare('UPDATE guild_economy SET bank = ? WHERE user_id = ? AND guild_id = ?');
+const updateEconomyDaily = db.prepare('UPDATE guild_economy SET daily_claimed = ? WHERE user_id = ? AND guild_id = ?');
+const updateEconomyWork = db.prepare('UPDATE guild_economy SET work_cooldown = ? WHERE user_id = ? AND guild_id = ?');
+
+const ensureEconomy = (userId, guildId) => {
+    insertEconomy.run(userId, guildId);
+    return getEconomy.get(userId, guildId);
+};
+
+const transferCoins = db.transaction((fromId, toId, guildId, amount) => {
+    ensureEconomy(fromId, guildId);
+    ensureEconomy(toId, guildId);
+    const from = getEconomy.get(fromId, guildId);
+    if (!from || from.balance < amount) return false;
+    updateEconomyBalance.run(from.balance - amount, fromId, guildId);
+    const to = getEconomy.get(toId, guildId);
+    updateEconomyBalance.run(to.balance + amount, toId, guildId);
+    return true;
+});
+
 const getGuild = db.prepare('SELECT * FROM guilds WHERE id = ?');
 const insertGuild = db.prepare('INSERT OR IGNORE INTO guilds (id) VALUES (?)');
-const updateGuildSetting = (setting) => db.prepare(`UPDATE guilds SET ${setting} = ? WHERE id = ?`);
+const GUILD_COLUMNS = new Set([
+    'welcome_channel', 'welcome_message', 'goodbye_channel', 'goodbye_message',
+    'log_channel', 'mod_log_channel', 'ticket_category', 'ticket_log_channel',
+    'support_role', 'automod_enabled', 'automod_antilink', 'automod_antispam',
+    'automod_badwords', 'automod_caps', 'automod_mentions', 'automod_wordlist',
+    'automod_whitelist', 'leveling_enabled', 'level_up_channel', 'level_up_message',
+    'level_roles'
+]);
+const updateGuildSetting = (setting) => {
+    if (!GUILD_COLUMNS.has(setting)) {
+        throw new Error(`Invalid guild setting: ${setting}`);
+    }
+    return db.prepare(`UPDATE guilds SET ${setting} = ? WHERE id = ?`);
+};
 
 const getUserGuildData = db.prepare('SELECT * FROM user_guild_data WHERE user_id = ? AND guild_id = ?');
 const insertUserGuildData = db.prepare('INSERT OR IGNORE INTO user_guild_data (user_id, guild_id) VALUES (?, ?)');
@@ -173,7 +227,7 @@ const insertReminder = db.prepare('INSERT INTO reminders (user_id, channel_id, m
 const deleteReminder = db.prepare('DELETE FROM reminders WHERE id = ?');
 
 const getLeaderboard = db.prepare('SELECT * FROM user_guild_data WHERE guild_id = ? ORDER BY xp DESC LIMIT ?');
-const getEconomyLeaderboard = db.prepare('SELECT * FROM users ORDER BY (balance + bank) DESC LIMIT ?');
+const getEconomyLeaderboard = db.prepare('SELECT * FROM guild_economy WHERE guild_id = ? ORDER BY (balance + bank) DESC LIMIT ?');
 
 const getShopItems = db.prepare('SELECT * FROM shop_items WHERE guild_id = ?');
 const getShopItem = db.prepare('SELECT * FROM shop_items WHERE id = ? AND guild_id = ?');
@@ -212,6 +266,14 @@ module.exports = {
     updateUserBank,
     updateUserDaily,
     updateUserWork,
+    getEconomy,
+    insertEconomy,
+    ensureEconomy,
+    updateEconomyBalance,
+    updateEconomyBank,
+    updateEconomyDaily,
+    updateEconomyWork,
+    transferCoins,
     getGuild,
     insertGuild,
     updateGuildSetting,

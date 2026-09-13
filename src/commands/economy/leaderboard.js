@@ -23,7 +23,10 @@ module.exports = {
         await interaction.deferReply();
 
         if (type === 'economy') {
-            const leaderboard = getEconomyLeaderboard.all(10);
+            if (!interaction.guild) {
+                return interaction.editReply({ content: 'Economy is per-server. Use this in a guild.' });
+            }
+            const leaderboard = getEconomyLeaderboard.all(interaction.guild.id, 10);
 
             if (leaderboard.length === 0) {
                 return interaction.editReply({
@@ -37,7 +40,7 @@ module.exports = {
 
             const leaderboardEntries = await Promise.all(
                 leaderboard.map(async (entry, index) => {
-                    const user = await client.users.fetch(entry.id).catch(() => null);
+                    const user = await client.users.fetch(entry.user_id).catch(() => null);
                     const username = user ? user.username : 'Unknown User';
                     const total = entry.balance + entry.bank;
                     const medals = ['🥇', '🥈', '🥉'];
@@ -50,7 +53,7 @@ module.exports = {
                 .setColor(colors.primary)
                 .setTitle('💰 Economy Leaderboard')
                 .setDescription(leaderboardEntries.join('\n'))
-                .setFooter({ text: 'Top 10 richest users' })
+                .setFooter({ text: `Top 10 in ${interaction.guild.name}` })
                 .setTimestamp();
 
             await interaction.editReply({ embeds: [embed] });

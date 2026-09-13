@@ -1,6 +1,6 @@
 const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
 const { colors } = require('../../config/config');
-const { getUser, insertUser } = require('../../utils/database');
+const { ensureEconomy } = require('../../utils/database');
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -16,8 +16,10 @@ module.exports = {
     async execute(interaction) {
         const target = interaction.options.getUser('user') || interaction.user;
         
-        insertUser.run(target.id);
-        const userData = getUser.get(target.id);
+        if (!interaction.guild) {
+            return interaction.reply({ content: 'Economy is per-server. Use this in a guild.', ephemeral: true });
+        }
+        const userData = ensureEconomy(target.id, interaction.guild.id);
 
         const total = userData.balance + userData.bank;
 

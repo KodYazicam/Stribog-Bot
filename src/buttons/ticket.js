@@ -33,11 +33,7 @@ module.exports = {
             }
 
             const ticketNumber = Date.now().toString(36);
-            const channel = await interaction.guild.channels.create({
-                name: `ticket-${interaction.user.username}-${ticketNumber}`,
-                type: ChannelType.GuildText,
-                parent: guildData.ticket_category,
-                permissionOverwrites: [
+            const overwrites = [
                     {
                         id: interaction.guild.id,
                         deny: [PermissionsBitField.Flags.ViewChannel]
@@ -58,7 +54,22 @@ module.exports = {
                             PermissionsBitField.Flags.ManageChannels
                         ]
                     }
-                ]
+            ];
+            if (guildData.support_role) {
+                overwrites.push({
+                    id: guildData.support_role,
+                    allow: [
+                        PermissionsBitField.Flags.ViewChannel,
+                        PermissionsBitField.Flags.SendMessages,
+                        PermissionsBitField.Flags.ReadMessageHistory
+                    ]
+                });
+            }
+            const channel = await interaction.guild.channels.create({
+                name: `ticket-${interaction.user.username}-${ticketNumber}`,
+                type: ChannelType.GuildText,
+                parent: guildData.ticket_category,
+                permissionOverwrites: overwrites
             });
 
             insertTicket.run(channel.id, interaction.guild.id, interaction.user.id, Date.now());
@@ -118,6 +129,19 @@ module.exports = {
 
         } else if (action === 'close' || interaction.customId === 'ticket_close') {
             const ticket = getTicket.get(interaction.channel.id);
+            const guildData = getGuild.get(interaction.guild.id);
+            const isStaff = interaction.member.permissions.has(PermissionsBitField.Flags.ManageChannels)
+                || (guildData?.support_role && interaction.member.roles.cache.has(guildData.support_role));
+            if (ticket && ticket.user_id !== interaction.user.id && !isStaff) {
+                return interaction.reply({
+                    embeds: [
+                        new EmbedBuilder()
+                            .setColor(colors.danger)
+                            .setDescription('Only the ticket owner or staff can close this ticket.')
+                    ],
+                    ephemeral: true
+                });
+            }
 
             if (!ticket) {
                 return interaction.reply({

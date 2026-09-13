@@ -127,37 +127,18 @@ module.exports = {
             } catch (error) {
                 console.error(`Autocomplete error for ${interaction.commandName}:`, error);
             }
-        } else if (interaction.isButton()) {
+        } else if (interaction.isButton() || interaction.isStringSelectMenu() || interaction.isModalSubmit()) {
+            const { safeHandlerName } = require('../utils/handlers');
             const [action, ...args] = interaction.customId.split('_');
-            
+            const name = safeHandlerName(action);
+            if (!name) return;
+            const folder = interaction.isButton() ? 'buttons' : interaction.isStringSelectMenu() ? 'menus' : 'modals';
             try {
-                const buttonHandler = require(`../buttons/${action}`);
-                await buttonHandler.execute(interaction, client, args);
+                const handler = require(`../${folder}/${name}`);
+                await handler.execute(interaction, client, args);
             } catch (error) {
                 if (error.code !== 'MODULE_NOT_FOUND') {
-                    console.error(`Button error for ${action}:`, error);
-                }
-            }
-        } else if (interaction.isStringSelectMenu()) {
-            const [action, ...args] = interaction.customId.split('_');
-            
-            try {
-                const menuHandler = require(`../menus/${action}`);
-                await menuHandler.execute(interaction, client, args);
-            } catch (error) {
-                if (error.code !== 'MODULE_NOT_FOUND') {
-                    console.error(`Menu error for ${action}:`, error);
-                }
-            }
-        } else if (interaction.isModalSubmit()) {
-            const [action, ...args] = interaction.customId.split('_');
-            
-            try {
-                const modalHandler = require(`../modals/${action}`);
-                await modalHandler.execute(interaction, client, args);
-            } catch (error) {
-                if (error.code !== 'MODULE_NOT_FOUND') {
-                    console.error(`Modal error for ${action}:`, error);
+                    console.error(`${folder} error for ${name}:`, error);
                 }
             }
         }
