@@ -62,6 +62,15 @@ module.exports = {
             }
 
             await interaction.editReply({ embeds: [embed] });
+            const { sendModLog } = require('../../utils/modlog');
+            await sendModLog(interaction.guild, {
+                title: 'Messages Deleted',
+                moderator: interaction.user,
+                fields: [
+                    { name: 'Count', value: String(deleted.size), inline: true },
+                    { name: 'Channel', value: `${interaction.channel}`, inline: true }
+                ]
+            });
         } catch (error) {
             console.error('Clear error:', error);
             await interaction.editReply({

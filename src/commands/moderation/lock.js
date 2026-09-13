@@ -38,6 +38,15 @@ module.exports = {
                 .setTimestamp();
 
             await interaction.reply({ embeds: [embed] });
+            const { sendModLog } = require('../../utils/modlog');
+            await sendModLog(interaction.guild, {
+                title: 'Channel Locked',
+                moderator: interaction.user,
+                fields: [
+                    { name: 'Channel', value: `${channel}`, inline: true },
+                    { name: 'Reason', value: reason }
+                ]
+            });
 
             if (channel.id !== interaction.channel.id) {
                 await channel.send({

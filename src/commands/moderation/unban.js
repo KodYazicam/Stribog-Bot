@@ -61,6 +61,13 @@ module.exports = {
                 .setTimestamp();
 
             await interaction.reply({ embeds: [embed] });
+            const { sendModLog } = require('../../utils/modlog');
+            await sendModLog(interaction.guild, {
+                title: 'User Unbanned',
+                moderator: interaction.user,
+                target: bannedUser.user,
+                fields: [{ name: 'Reason', value: reason }]
+            });
         } catch (error) {
             console.error('Unban error:', error);
             await interaction.reply({

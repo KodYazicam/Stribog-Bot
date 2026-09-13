@@ -62,6 +62,15 @@ module.exports = {
                         .setTimestamp();
 
                     await newChannel.send({ embeds: [nukedEmbed] });
+                    const { sendModLog } = require('../../utils/modlog');
+                    await sendModLog(interaction.guild, {
+                        title: 'Channel Nuked',
+                        moderator: interaction.user,
+                        fields: [
+                            { name: 'Old Channel', value: `#${channel.name}`, inline: true },
+                            { name: 'New Channel', value: `${newChannel}`, inline: true }
+                        ]
+                    });
                 } catch (error) {
                     console.error('Nuke error:', error);
                 }

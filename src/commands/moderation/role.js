@@ -107,6 +107,13 @@ module.exports = {
                     .setTimestamp();
 
                 await interaction.reply({ embeds: [embed] });
+                const { sendModLog } = require('../../utils/modlog');
+                await sendModLog(interaction.guild, {
+                    title: 'Role Added',
+                    moderator: interaction.user,
+                    target,
+                    fields: [{ name: 'Role', value: `${role}` }]
+                });
             } catch (error) {
                 console.error('Role add error:', error);
                 await interaction.reply({
@@ -181,6 +188,13 @@ module.exports = {
                     .setTimestamp();
 
                 await interaction.reply({ embeds: [embed] });
+                const { sendModLog } = require('../../utils/modlog');
+                await sendModLog(interaction.guild, {
+                    title: 'Role Removed',
+                    moderator: interaction.user,
+                    target,
+                    fields: [{ name: 'Role', value: `${role}` }]
+                });
             } catch (error) {
                 console.error('Role remove error:', error);
                 await interaction.reply({

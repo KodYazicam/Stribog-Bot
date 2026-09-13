@@ -75,7 +75,9 @@
 - **Ticket Panels** - Create interactive ticket panels
 - **Categories** - Organize tickets by category
 - **Support role** - `/ticket setup` takes `support_role` so staff can see tickets
+- **Transcripts** - closing a ticket posts a `.txt` transcript to `ticket_log_channel`
 - **Staff Controls** - Add/remove users from tickets; close is owner or staff only
+- **Mod log** - ban/kick/timeout/warn/clear/lock/role/nuke write to `mod_log_channel` if set
 
 ### 📝 Logging System
 - **Message Logs** - Track edited and deleted messages

@@ -38,6 +38,12 @@ module.exports = {
                 .setTimestamp();
 
             await interaction.reply({ embeds: [embed] });
+            const { sendModLog } = require('../../utils/modlog');
+            await sendModLog(interaction.guild, {
+                title: 'Slowmode Updated',
+                moderator: interaction.user,
+                fields: [{ name: 'Seconds', value: String(seconds), inline: true }]
+            });
         } catch (error) {
             console.error('Slowmode error:', error);
             await interaction.reply({

@@ -96,6 +96,16 @@ module.exports = {
                 .setTimestamp();
 
             await interaction.reply({ embeds: [embed] });
+            const { sendModLog } = require('../../utils/modlog');
+            await sendModLog(interaction.guild, {
+                title: 'Member Softbanned',
+                moderator: interaction.user,
+                target,
+                fields: [
+                    { name: 'Messages Deleted', value: `${days} day(s)`, inline: true },
+                    { name: 'Reason', value: reason }
+                ]
+            });
         } catch (error) {
             console.error('Softban error:', error);
             await interaction.reply({

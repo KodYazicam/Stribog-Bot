@@ -192,6 +192,9 @@ module.exports = {
                 const logChannel = await interaction.guild.channels.fetch(guildData.ticket_log_channel).catch(() => null);
                 if (logChannel) {
                     const ticketUser = await client.users.fetch(ticket.user_id).catch(() => null);
+                    const { buildTranscriptText } = require('../utils/transcript');
+                    const { AttachmentBuilder } = require('discord.js');
+                    const transcript = await buildTranscriptText(interaction.channel).catch(() => null);
                     await logChannel.send({
                         embeds: [
                             new EmbedBuilder()
@@ -203,7 +206,10 @@ module.exports = {
                                     { name: 'Duration', value: formatDuration(Date.now() - ticket.created_at), inline: true }
                                 )
                                 .setTimestamp()
-                        ]
+                        ],
+                        files: transcript
+                            ? [new AttachmentBuilder(Buffer.from(transcript, 'utf8'), { name: `transcript-${interaction.channel.id}.txt` })]
+                            : []
                     });
                 }
             }
