@@ -219,10 +219,7 @@ Click **"Save Changes"**
 2. Under **"Scopes"**, check:
    - ✅ `bot`
    - ✅ `applications.commands`
-3. Under **"Bot Permissions"**, check:
-   - ✅ `Administrator` (easiest option)
-   
-   Or select individual permissions:
+3. Under **"Bot Permissions"**, do **not** tick Administrator. Check:
    - ✅ Manage Channels
    - ✅ Manage Roles
    - ✅ Kick Members
@@ -775,9 +772,8 @@ stribog/
 
 #### ❌ "Missing Permissions"
 **Solution:** 
-1. Make sure the bot has Administrator permission
-2. Or enable all required permissions individually
-3. Make sure the bot's role is higher than the roles it's trying to manage
+1. Enable the permissions listed in the invite section (not Administrator)
+2. Make sure the bot's role is higher than the roles it's trying to manage
 
 #### ❌ "Unknown interaction"
 **Solution:** Run `npm run deploy` to register commands.
