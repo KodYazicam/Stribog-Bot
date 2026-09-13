@@ -116,6 +116,16 @@ module.exports = {
                 .setTimestamp();
 
             await interaction.reply({ embeds: [embed] });
+            const { sendModLog } = require('../../utils/modlog');
+            await sendModLog(interaction.guild, {
+                title: 'Member Timed Out',
+                moderator: interaction.user,
+                target,
+                fields: [
+                    { name: 'Duration', value: `${duration} minutes`, inline: true },
+                    { name: 'Reason', value: reason }
+                ]
+            });
         } catch (error) {
             console.error('Timeout error:', error);
             await interaction.reply({
