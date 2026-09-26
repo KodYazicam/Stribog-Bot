@@ -100,6 +100,7 @@
 - **Trivia** - Answer trivia questions
 - **Meme** - Get random memes
 - **Poll** - Create polls
+- **Pick** - Random choice from a list
 
 ### 🔧 Utility Commands
 - **Help** - Interactive help menu
@@ -404,6 +405,7 @@ If everything is correct, you should see:
 | `/trivia` | Trivia game | `/trivia` |
 | `/meme` | Random meme | `/meme` |
 | `/poll` | Create poll | `/poll question:Pineapple on pizza? option1:Yes option2:No` |
+| `/pick` | Random pick from options | `/pick options:pizza, sushi, burgers` |
 
 ### Utility Commands
 
