@@ -9,7 +9,7 @@
 
 **Moderation, per-guild economy, leveling, giveaways, tickets.** Env var is `TOKEN` (not `DISCORD_TOKEN`). Weather is Open-Meteo — no API key. See [SECURITY.md](./SECURITY.md).
 
-[Features](#-features) • [Installation](#-installation) • [Configuration](#-configuration) • [Commands](#-commands) • [Customization](#-customization)
+[Features](#-features) • [Installation](#-installation) • [Configuration](#-configuration) • [Commands](#-commands) • [Customization](#-customization) • [Roadmap](./ROADMAP.md) • [Changelog](./CHANGELOG.md)
 
 </div>
 
