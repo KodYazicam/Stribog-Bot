@@ -209,7 +209,6 @@ const getWarnings = db.prepare('SELECT * FROM warnings WHERE guild_id = ? AND us
 const addWarning = db.prepare('INSERT INTO warnings (guild_id, user_id, moderator_id, reason, timestamp) VALUES (?, ?, ?, ?, ?)');
 const clearWarnings = db.prepare('DELETE FROM warnings WHERE guild_id = ? AND user_id = ?');
 const deleteWarning = db.prepare('DELETE FROM warnings WHERE id = ?');
-const deleteWarningById = db.prepare('DELETE FROM warnings WHERE id = ? AND guild_id = ? AND user_id = ?');
 
 const getActiveGiveaways = db.prepare('SELECT * FROM giveaways WHERE ended = 0 AND end_time <= ?');
 const getAllActiveGiveaways = db.prepare('SELECT * FROM giveaways WHERE ended = 0');
@@ -285,7 +284,6 @@ module.exports = {
     addWarning,
     clearWarnings,
     deleteWarning,
-    deleteWarningById,
     getActiveGiveaways,
     getAllActiveGiveaways,
     getGiveaway,

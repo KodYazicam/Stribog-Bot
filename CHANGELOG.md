@@ -8,10 +8,6 @@ All notable changes to this project are documented here. The format follows
 
 ### Added
 
-- `/warnings list|remove|clear` for per-guild warning history management. Removals
-  are scoped by guild, target, and warning id.
-- Successful `/warn` actions now persist a warning row, matching the documented
-  history-tracking behavior.
 - Command-level moderation tests covering permission declarations, self/bot and
   role-hierarchy guards, dispatcher role checks, cooldowns, and warning
   persistence in SQLite.

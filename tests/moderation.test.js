@@ -6,7 +6,6 @@ const ban = require('../src/commands/moderation/ban');
 const kick = require('../src/commands/moderation/kick');
 const timeout = require('../src/commands/moderation/timeout');
 const warn = require('../src/commands/moderation/warn');
-const warningsCommand = require('../src/commands/moderation/warnings');
 const interactionCreate = require('../src/events/interactionCreate');
 const database = require('../src/utils/database');
 
@@ -87,14 +86,9 @@ function makeInteraction(command, {
         user: actor.user,
         client: { user: { id: BOT_ID } },
         options: {
-            getUser: name => {
-                if (name === 'user') return options.user ?? target;
-                if (name === 'target') return target;
-                return null;
-            },
+            getUser: name => name === 'target' ? target : null,
             getString: name => options[name] ?? null,
-            getInteger: name => options[name] ?? null,
-            getSubcommand: () => options.subcommand ?? null
+            getInteger: name => options[name] ?? null
         },
         replied: false,
         deferred: false,
@@ -176,8 +170,6 @@ test('moderation commands declare least-privilege default permissions', () => {
     assert.equal(kick.data.default_member_permissions, String(PermissionFlagsBits.KickMembers));
     assert.equal(timeout.data.default_member_permissions, String(PermissionFlagsBits.ModerateMembers));
     assert.equal(warn.data.default_member_permissions, String(PermissionFlagsBits.ModerateMembers));
-    assert.equal(warningsCommand.data.default_member_permissions, String(PermissionFlagsBits.ModerateMembers));
-    assert.deepEqual(warningsCommand.data.options.map(option => option.name), ['list', 'remove', 'clear']);
 });
 
 for (const testCase of moderationCommands) {
@@ -196,7 +188,6 @@ for (const testCase of moderationCommands) {
 
         assert.match(replyDescription(interaction), /User not found in this server/);
         assert.equal(interaction.replies.length, 1);
-        assert.equal(database.getWarnings.all(interaction.guild.id, target.id).length, 0);
     });
 
     test(`${testCase.label}: rejects self-targeting`, async () => {
@@ -214,7 +205,6 @@ for (const testCase of moderationCommands) {
 
         assert.equal(replyDescription(interaction), testCase.selfMessage);
         assert.deepEqual(testCase.actionCalls(targetMember) || [], []);
-        assert.equal(database.getWarnings.all(interaction.guild.id, actorUser.id).length, 0);
     });
 
     test(`${testCase.label}: rejects targeting the bot`, async () => {
@@ -233,7 +223,6 @@ for (const testCase of moderationCommands) {
 
         assert.equal(replyDescription(interaction), testCase.botMessage);
         assert.deepEqual(testCase.actionCalls(targetMember) || [], []);
-        assert.equal(database.getWarnings.all(interaction.guild.id, target.id).length, 0);
     });
 
     test(`${testCase.label}: rejects an equal-or-higher role`, async () => {
@@ -252,7 +241,6 @@ for (const testCase of moderationCommands) {
 
         assert.equal(replyDescription(interaction), testCase.hierarchyMessage);
         assert.deepEqual(testCase.actionCalls(targetMember) || [], []);
-        assert.equal(database.getWarnings.all(interaction.guild.id, target.id).length, 0);
     });
 
     test(`${testCase.label}: completes the successful path`, async () => {
@@ -274,141 +262,9 @@ for (const testCase of moderationCommands) {
         assert.equal(interaction.replies.length, 1);
         if (testCase.label !== 'warn') {
             assert.equal(testCase.actionCalls(targetMember).length, 1);
-        } else {
-            const rows = database.getWarnings.all(interaction.guild.id, target.id);
-            assert.equal(rows.length, 1);
-            assert.equal(rows[0].moderator_id, actorUser.id);
-            assert.equal(rows[0].reason, testCase.options.reason);
-            database.clearWarnings.run(interaction.guild.id, target.id);
         }
     });
 }
-
-test('warnings list shows only the current guild and user rows', async () => {
-    const guildId = unique('guild');
-    const otherGuildId = unique('guild');
-    const user = makeUser(unique('user'));
-    const otherUser = makeUser(unique('user'));
-    const moderatorId = unique('mod');
-    const now = Date.now();
-
-    database.addWarning.run(guildId, user.id, moderatorId, 'first warning', now - 2000);
-    database.addWarning.run(guildId, user.id, moderatorId, 'second warning', now - 1000);
-    database.addWarning.run(otherGuildId, user.id, moderatorId, 'other guild', now);
-    database.addWarning.run(guildId, otherUser.id, moderatorId, 'other user', now);
-
-    const interaction = makeInteraction(warningsCommand, {
-        target: user,
-        actor: makeActor(makeUser(unique('mod'))),
-        guildId,
-        options: { subcommand: 'list', user }
-    });
-
-    try {
-        await warningsCommand.execute(interaction);
-
-        assert.match(replyDescription(interaction), /2\*\* warnings for/);
-        const fields = interaction.replies[0].embeds[0].data.fields;
-        assert.equal(fields.length, 2);
-        assert.match(fields[0].value, /second warning/);
-        assert.match(fields[1].value, /first warning/);
-    } finally {
-        database.clearWarnings.run(guildId, user.id);
-        database.clearWarnings.run(otherGuildId, user.id);
-        database.clearWarnings.run(guildId, otherUser.id);
-    }
-});
-
-test('warnings list reports an empty history', async () => {
-    const user = makeUser(unique('user'));
-    const interaction = makeInteraction(warningsCommand, {
-        target: user,
-        actor: makeActor(makeUser(unique('mod'))),
-        options: { subcommand: 'list', user }
-    });
-
-    await warningsCommand.execute(interaction);
-
-    assert.match(replyDescription(interaction), /No warnings found/);
-    assert.equal(interaction.replies[0].ephemeral, true);
-});
-
-test('warnings remove deletes only a matching guild and user warning', async () => {
-    const guildId = unique('guild');
-    const otherGuildId = unique('guild');
-    const user = makeUser(unique('user'));
-    const otherUser = makeUser(unique('user'));
-    const moderatorId = unique('mod');
-    const now = Date.now();
-
-    const currentId = Number(database.addWarning.run(guildId, user.id, moderatorId, 'current', now).lastInsertRowid);
-    const otherGuildIdWarning = Number(database.addWarning.run(otherGuildId, user.id, moderatorId, 'other guild', now).lastInsertRowid);
-    const otherUserId = Number(database.addWarning.run(guildId, otherUser.id, moderatorId, 'other user', now).lastInsertRowid);
-
-    try {
-        const wrongTarget = makeInteraction(warningsCommand, {
-            target: user,
-            actor: makeActor(makeUser(unique('mod'))),
-            guildId,
-            options: { subcommand: 'remove', user, id: otherGuildIdWarning }
-        });
-
-        await warningsCommand.execute(wrongTarget);
-
-        assert.match(replyDescription(wrongTarget), /not found/);
-        assert.equal(database.getWarnings.all(guildId, user.id).length, 1);
-        assert.equal(database.getWarnings.all(otherGuildId, user.id).length, 1);
-
-        const interaction = makeInteraction(warningsCommand, {
-            target: user,
-            actor: makeActor(makeUser(unique('mod'))),
-            guildId,
-            options: { subcommand: 'remove', user, id: currentId }
-        });
-
-        await warningsCommand.execute(interaction);
-
-        assert.match(replyDescription(interaction), new RegExp(`Removed warning #${currentId}`));
-        assert.equal(database.getWarnings.all(guildId, user.id).length, 0);
-        assert.equal(database.getWarnings.all(otherGuildId, user.id).length, 1);
-        assert.equal(database.getWarnings.all(guildId, otherUser.id).length, 1);
-        assert.equal(database.getWarnings.all(guildId, otherUser.id)[0].id, otherUserId);
-    } finally {
-        database.clearWarnings.run(guildId, user.id);
-        database.clearWarnings.run(otherGuildId, user.id);
-        database.clearWarnings.run(guildId, otherUser.id);
-    }
-});
-
-test('warnings clear clears only the current guild and user rows', async () => {
-    const guildId = unique('guild');
-    const otherGuildId = unique('guild');
-    const user = makeUser(unique('user'));
-    const moderatorId = unique('mod');
-    const now = Date.now();
-
-    database.addWarning.run(guildId, user.id, moderatorId, 'first', now - 1000);
-    database.addWarning.run(guildId, user.id, moderatorId, 'second', now);
-    database.addWarning.run(otherGuildId, user.id, moderatorId, 'other guild', now);
-
-    const interaction = makeInteraction(warningsCommand, {
-        target: user,
-        actor: makeActor(makeUser(unique('mod'))),
-        guildId,
-        options: { subcommand: 'clear', user }
-    });
-
-    try {
-        await warningsCommand.execute(interaction);
-
-        assert.match(replyDescription(interaction), /Cleared \*\*2\*\* warnings/);
-        assert.equal(database.getWarnings.all(guildId, user.id).length, 0);
-        assert.equal(database.getWarnings.all(otherGuildId, user.id).length, 1);
-    } finally {
-        database.clearWarnings.run(guildId, user.id);
-        database.clearWarnings.run(otherGuildId, user.id);
-    }
-});
 
 test('dispatcher blocks a member without an allowed role', async () => {
     const commandName = unique('permission-test');

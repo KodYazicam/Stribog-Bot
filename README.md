@@ -341,10 +341,10 @@ If everything is correct, you should see:
 | `/unban` | Unban a user | `/unban user_id:123456789` |
 | `/kick` | Kick a user | `/kick user:@user reason:Spam` |
 | `/timeout` | Timeout a user | `/timeout user:@user duration:1h reason:Spam` |
-| `/warn` | Warn a user and save it to history (Moderate Members) | `/warn target:@user reason:Warning` |
-| `/warnings list` | View a user's warning history (Moderate Members) | `/warnings list user:@user` |
-| `/warnings remove` | Remove one warning by id (Moderate Members) | `/warnings remove user:@user id:1` |
-| `/warnings clear` | Clear all warnings for a user (Moderate Members) | `/warnings clear user:@user` |
+| `/warn` | Warn a user | `/warn user:@user reason:Warning` |
+| `/warn list` | View warnings | `/warn list user:@user` |
+| `/warn remove` | Remove warning | `/warn remove user:@user id:1` |
+| `/warn clear` | Clear all warnings | `/warn clear user:@user` |
 | `/clear` | Delete messages | `/clear amount:50` |
 | `/slowmode` | Set slowmode | `/slowmode seconds:5` |
 | `/lock` | Lock channel | `/lock reason:Maintenance` |
