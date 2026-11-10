@@ -1,6 +1,5 @@
 const { SlashCommandBuilder, EmbedBuilder, PermissionFlagsBits } = require('discord.js');
 const { colors } = require('../../config/config');
-const { addWarning } = require('../../utils/database');
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -78,14 +77,6 @@ module.exports = {
                         .setTimestamp()
                 ]
             }).catch(() => null);
-
-            addWarning.run(
-                interaction.guild.id,
-                target.id,
-                interaction.user.id,
-                reason,
-                Date.now()
-            );
 
             const embed = new EmbedBuilder()
                 .setColor(colors.warning)
