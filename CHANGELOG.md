@@ -6,6 +6,12 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- Command-level moderation tests covering permission declarations, self/bot and
+  role-hierarchy guards, dispatcher role checks, cooldowns, and warning
+  persistence in SQLite.
+
 ### Changed
 
 - Added issue templates, pull request template, Dependabot, roadmap, and changelog.
