@@ -15,9 +15,13 @@ All notable changes to this project are documented here. The format follows
 - Command-level moderation tests covering permission declarations, self/bot and
   role-hierarchy guards, dispatcher role checks, cooldowns, and warning
   persistence in SQLite.
+- `npm run commands:list` to audit registered slash commands and
+  `npm run docs:check` to verify the README command reference against them.
 
 ### Changed
 
+- README command reference now uses the shipped command, subcommand, and option
+  names and lists each command's default permission.
 - Added issue templates, pull request template, Dependabot, roadmap, and changelog.
 - Overrode `minimatch` to `^11.0.5` for the dev-only `nodemon` dependency,
   clearing the GHSA-g3hv-75wg-m249 advisory.
