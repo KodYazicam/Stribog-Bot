@@ -7,7 +7,9 @@
     "start": "node src/index.js",
     "deploy": "node src/deploy-commands.js",
     "dev": "nodemon src/index.js",
-    "test": "node --test"
+    "test": "node --test && node scripts/check-command-docs.js",
+    "commands:list": "node scripts/command-reference.js",
+    "docs:check": "node scripts/check-command-docs.js"
   },
   "repository": {
     "type": "git",

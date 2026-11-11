@@ -325,116 +325,145 @@ If everything is correct, you should see:
 
 ## 📜 Commands
 
+> **Permissions** are the Discord defaults declared by each command. `Everyone`
+> means no default restriction. Admins can override command access with
+> `/permissions`.
+>
+> Examples are checked against the serialized slash-command payloads. Run
+> `npm run commands:list` to inspect command, subcommand, and option names;
+> `npm test` also runs `npm run docs:check` to verify every row in this section.
+
 ### Admin Commands
 
-| Command | Description | Usage |
-|---------|-------------|-------|
-| `/setlog` | Set logging channel | `/setlog channel:#channel` |
-| `/automod` | Configure auto-moderation | `/automod antispam enable:true` |
-| `/permissions` | Manage command permissions | `/permissions allow command:ping role:@Member` |
+| Command | Permission | Description | Example |
+|---------|------------|-------------|---------|
+| `/setlog all` | Administrator | Set the main log channel for all events | `/setlog all channel:#logs` |
+| `/setlog modlog` | Administrator | Set the moderation log channel | `/setlog modlog channel:#mod-logs` |
+| `/setlog welcome` | Administrator | Set the welcome channel | `/setlog welcome channel:#welcome` |
+| `/setlog goodbye` | Administrator | Set the goodbye channel | `/setlog goodbye channel:#goodbye` |
+| `/setlog levelup` | Administrator | Set the level-up channel | `/setlog levelup channel:#level-up` |
+| `/setlog disable` | Administrator | Disable a logging channel | `/setlog disable type:mod_log_channel` |
+| `/setlog status` | Administrator | View current logging settings | `/setlog status` |
+| `/automod antilink` | Administrator | Toggle anti-link protection | `/automod antilink enabled:true` |
+| `/automod antispam` | Administrator | Toggle anti-spam protection | `/automod antispam enabled:true` |
+| `/automod badwords` | Administrator | Toggle the bad-words filter | `/automod badwords enabled:true` |
+| `/automod caps` | Administrator | Toggle the excessive-caps filter | `/automod caps enabled:true` |
+| `/automod mentions` | Administrator | Toggle the mass-mentions filter | `/automod mentions enabled:true` |
+| `/automod addword` | Administrator | Add a word to the filter | `/automod addword word:badword` |
+| `/automod removeword` | Administrator | Remove a word from the filter | `/automod removeword word:badword` |
+| `/automod whitelist` | Administrator | Whitelist a link domain | `/automod whitelist domain:youtube.com` |
+| `/automod status` | Administrator | View automod settings | `/automod status` |
+| `/permissions allow` | Administrator | Allow a role to use a command | `/permissions allow command:ping role:@Member` |
+| `/permissions deny` | Administrator | Deny a role from a command | `/permissions deny command:ban role:@Member` |
+| `/permissions remove` | Administrator | Remove a role override | `/permissions remove command:ban role:@Member` |
+| `/permissions reset` | Administrator | Reset all rules for a command | `/permissions reset command:ban` |
+| `/permissions disable` | Administrator | Disable a command server-wide or in a channel | `/permissions disable command:meme channel:#general` |
+| `/permissions enable` | Administrator | Re-enable a disabled command | `/permissions enable command:meme channel:#general` |
+| `/permissions view` | Administrator | View rules for a command | `/permissions view command:ban` |
+| `/permissions list` | Administrator | List all permission overrides | `/permissions list` |
 
 ### Moderation Commands
 
-| Command | Description | Usage |
-|---------|-------------|-------|
-| `/ban` | Ban a user | `/ban user:@user reason:Breaking rules` |
-| `/unban` | Unban a user | `/unban user_id:123456789` |
-| `/kick` | Kick a user | `/kick user:@user reason:Spam` |
-| `/timeout` | Timeout a user | `/timeout user:@user duration:1h reason:Spam` |
-| `/warn` | Warn a user and save it to history (Moderate Members) | `/warn target:@user reason:Warning` |
-| `/warnings list` | View a user's warning history (Moderate Members) | `/warnings list user:@user` |
-| `/warnings remove` | Remove one warning by id (Moderate Members) | `/warnings remove user:@user id:1` |
-| `/warnings clear` | Clear all warnings for a user (Moderate Members) | `/warnings clear user:@user` |
-| `/clear` | Delete messages | `/clear amount:50` |
-| `/slowmode` | Set slowmode | `/slowmode seconds:5` |
-| `/lock` | Lock channel | `/lock reason:Maintenance` |
-| `/unlock` | Unlock channel | `/unlock` |
-| `/softban` | Softban user | `/softban user:@user` |
-| `/nuke` | Nuke channel | `/nuke` |
-| `/role` | Manage roles | `/role add user:@user role:@Role` |
+| Command | Permission | Description | Example |
+|---------|------------|-------------|---------|
+| `/ban` | Ban Members | Ban a member | `/ban target:@user reason:Breaking rules days:0` |
+| `/unban` | Ban Members | Unban a user by id | `/unban userid:123456789012345678 reason:Appeal accepted` |
+| `/kick` | Kick Members | Kick a member | `/kick target:@user reason:Spam` |
+| `/timeout` | Moderate Members | Timeout a member for a number of minutes | `/timeout target:@user duration:60 reason:Spam` |
+| `/warn` | Moderate Members | Warn a member and save it to history | `/warn target:@user reason:Warning` |
+| `/warnings list` | Moderate Members | View a user's warning history | `/warnings list user:@user` |
+| `/warnings remove` | Moderate Members | Remove one warning by id | `/warnings remove user:@user id:1` |
+| `/warnings clear` | Moderate Members | Clear all warnings for a user | `/warnings clear user:@user` |
+| `/clear` | Manage Messages | Bulk-delete recent messages | `/clear amount:50 target:@user` |
+| `/slowmode` | Manage Channels | Set channel slowmode in seconds | `/slowmode seconds:10 channel:#general` |
+| `/lock` | Manage Channels | Lock a channel | `/lock channel:#general reason:Maintenance` |
+| `/unlock` | Manage Channels | Unlock a channel | `/unlock channel:#general` |
+| `/softban` | Ban Members | Ban and immediately unban to remove messages | `/softban target:@user days:1 reason:Spam` |
+| `/nuke` | Administrator | Recreate the current channel | `/nuke` |
+| `/role add` | Manage Roles | Add a role to a user | `/role add target:@user role:@VIP` |
+| `/role remove` | Manage Roles | Remove a role from a user | `/role remove target:@user role:@VIP` |
+| `/role info` | Manage Roles | Show role information | `/role info role:@VIP` |
 
 ### Economy Commands
 
-| Command | Description | Usage |
-|---------|-------------|-------|
-| `/balance` | Check balance | `/balance` or `/balance user:@user` |
-| `/daily` | Claim daily reward | `/daily` |
-| `/work` | Work for coins | `/work` |
-| `/give` | Give coins to user | `/give user:@user amount:100` |
-| `/deposit` | Deposit to bank | `/deposit amount:500` |
-| `/withdraw` | Withdraw from bank | `/withdraw amount:500` |
-| `/leaderboard` | Economy rankings | `/leaderboard` |
-| `/shop` | View/manage shop | `/shop view` |
-| `/shop add` | Add shop item | `/shop add name:VIP role:@VIP price:1000` |
-| `/shop buy` | Buy from shop | `/shop buy item:VIP` |
+| Command | Permission | Description | Example |
+|---------|------------|-------------|---------|
+| `/balance` | Everyone | Check a balance | `/balance user:@user` |
+| `/daily` | Everyone | Claim the daily reward | `/daily` |
+| `/work` | Everyone | Work for coins | `/work` |
+| `/give` | Everyone | Transfer coins to another user | `/give user:@user amount:100` |
+| `/deposit` | Everyone | Deposit coins into the bank | `/deposit amount:all` |
+| `/withdraw` | Everyone | Withdraw coins from the bank | `/withdraw amount:500` |
+| `/leaderboard` | Everyone | View economy or level rankings | `/leaderboard type:economy` |
+| `/shop view` | Everyone | View shop items | `/shop view` |
+| `/shop buy` | Everyone | Buy a shop item by id | `/shop buy id:1` |
+| `/shop add` | Everyone* | Add a shop item | `/shop add name:VIP price:1000 description:VIP access role:@VIP` |
+| `/shop remove` | Everyone* | Remove a shop item by id | `/shop remove id:1` |
+
+\* `/shop add` and `/shop remove` have no Discord default but check for
+Administrator at runtime.
 
 ### Leveling Commands
 
-| Command | Description | Usage |
-|---------|-------------|-------|
-| `/rank` | View your rank | `/rank` or `/rank user:@user` |
-| `/xpleaderboard` | XP rankings | `/xpleaderboard` |
-| `/setxp` | Set user XP | `/setxp user:@user amount:1000` |
+| Command | Permission | Description | Example |
+|---------|------------|-------------|---------|
+| `/rank` | Everyone | View a user's rank | `/rank user:@user` |
+| `/xpleaderboard` | Everyone | View XP rankings | `/xpleaderboard page:1` |
+| `/setxp` | Administrator | Set a user's XP | `/setxp user:@user xp:1000` |
 
 ### Giveaway Commands
 
-| Command | Description | Usage |
-|---------|-------------|-------|
-| `/giveaway start` | Start giveaway | `/giveaway start duration:1h winners:1 prize:Nitro` |
-| `/giveaway end` | End giveaway early | `/giveaway end message_id:123456` |
-| `/giveaway reroll` | Reroll winners | `/giveaway reroll message_id:123456` |
+| Command | Permission | Description | Example |
+|---------|------------|-------------|---------|
+| `/giveaway start` | Manage Guild | Start a giveaway | `/giveaway start prize:Nitro duration:1h winners:1` |
+| `/giveaway end` | Manage Guild | End a giveaway early | `/giveaway end message_id:123456789012345678` |
+| `/giveaway reroll` | Manage Guild | Reroll giveaway winners | `/giveaway reroll message_id:123456789012345678` |
 
 ### Ticket Commands
 
-| Command | Description | Usage |
-|---------|-------------|-------|
-| `/ticket setup` | Setup ticket system | `/ticket setup category:#category log:#log-channel` |
-| `/ticket panel` | Create ticket panel | `/ticket panel channel:#channel title:Support` |
-| `/ticket close` | Close a ticket | `/ticket close reason:Resolved` |
-| `/ticket add` | Add user to ticket | `/ticket add user:@user` |
-| `/ticket remove` | Remove user | `/ticket remove user:@user` |
+| Command | Permission | Description | Example |
+|---------|------------|-------------|---------|
+| `/ticket setup` | Manage Channels | Configure the ticket category, logs, and staff role | `/ticket setup category:#Tickets log_channel:#ticket-logs support_role:@Staff` |
+| `/ticket panel` | Manage Channels | Send the ticket panel in the current channel | `/ticket panel` |
+| `/ticket close` | Manage Channels | Close the current ticket | `/ticket close` |
+| `/ticket add` | Manage Channels | Add a user to the current ticket | `/ticket add user:@user` |
+| `/ticket remove` | Manage Channels | Remove a user from the current ticket | `/ticket remove user:@user` |
 
 ### Fun Commands
 
-| Command | Description | Usage |
-|---------|-------------|-------|
-| `/8ball` | Ask magic 8-ball | `/8ball question:Will I win?` |
-| `/coinflip` | Flip a coin | `/coinflip` |
-| `/dice` | Roll dice | `/dice sides:20` |
-| `/rps` | Rock Paper Scissors | `/rps` |
-| `/trivia` | Trivia game | `/trivia` |
-| `/meme` | Random meme | `/meme` |
-| `/poll` | Create poll | `/poll question:Pineapple on pizza? option1:Yes option2:No` |
-| `/pick` | Random pick from options | `/pick options:pizza, sushi, burgers` |
+| Command | Permission | Description | Example |
+|---------|------------|-------------|---------|
+| `/8ball` | Everyone | Ask the magic 8-ball | `/8ball question:Will I win?` |
+| `/coinflip` | Everyone | Flip a coin | `/coinflip` |
+| `/dice` | Everyone | Roll dice | `/dice sides:20 count:2` |
+| `/rps` | Everyone | Play rock-paper-scissors | `/rps opponent:@user` |
+| `/trivia` | Everyone | Start a trivia question | `/trivia category:science difficulty:medium` |
+| `/meme` | Everyone | Fetch a random meme | `/meme subreddit:dankmemes` |
+| `/poll` | Everyone | Create a reaction poll | `/poll question:Pineapple on pizza? option1:Yes option2:No` |
+| `/pick` | Everyone | Pick one option at random | `/pick options:pizza, sushi, burgers` |
+
+### Info Commands
+
+| Command | Permission | Description | Example |
+|---------|------------|-------------|---------|
+| `/avatar` | Everyone | Show a user's avatar | `/avatar target:@user` |
+| `/botinfo` | Everyone | Show bot information | `/botinfo` |
+| `/serverinfo` | Everyone | Show server information | `/serverinfo` |
+| `/userinfo` | Everyone | Show user information | `/userinfo target:@user` |
 
 ### Utility Commands
 
-| Command | Description | Usage |
-|---------|-------------|-------|
-| `/help` | Help menu | `/help` |
-| `/ping` | Bot latency | `/ping` |
-| `/reminder` | Set reminder | `/reminder time:30m message:Meeting` |
-| `/calc` | Calculator | `/calc expression:5+5*2` |
-| `/weather` | Weather info | `/weather location:London` |
-| `/embed` | Create embed | `/embed title:Hello description:World` |
-| `/invite` | Bot invite link | `/invite` |
-| `/userinfo` | User information | `/userinfo user:@user` |
-| `/serverinfo` | Server information | `/serverinfo` |
-| `/botinfo` | Bot information | `/botinfo` |
-| `/avatar` | User avatar | `/avatar user:@user` |
-
-### Permission Commands
-
-| Command | Description | Usage |
-|---------|-------------|-------|
-| `/permissions allow` | Allow role to use command | `/permissions allow command:ban role:@Moderator` |
-| `/permissions deny` | Deny role from command | `/permissions deny command:ban role:@Member` |
-| `/permissions remove` | Remove permission rule | `/permissions remove command:ban role:@Member` |
-| `/permissions reset` | Reset all rules for command | `/permissions reset command:ban` |
-| `/permissions disable` | Disable command | `/permissions disable command:meme channel:#general` |
-| `/permissions enable` | Enable command | `/permissions enable command:meme` |
-| `/permissions view` | View permissions | `/permissions view command:ban` |
-| `/permissions list` | List all rules | `/permissions list` |
+| Command | Permission | Description | Example |
+|---------|------------|-------------|---------|
+| `/help` | Everyone | Open the help menu | `/help` |
+| `/ping` | Everyone | Show bot latency | `/ping` |
+| `/reminder set` | Everyone | Set a reminder | `/reminder set time:30m message:Meeting` |
+| `/reminder list` | Everyone | List your reminders | `/reminder list` |
+| `/reminder delete` | Everyone | Delete one of your reminders | `/reminder delete id:1` |
+| `/calc` | Everyone | Evaluate an arithmetic expression | `/calc expression:5+5*2` |
+| `/weather` | Everyone | Show weather for a city | `/weather city:London` |
+| `/embed` | Manage Messages | Send a custom embed | `/embed title:Hello description:World channel:#general` |
+| `/invite` | Everyone | Get the bot invite link | `/invite` |
 
 ---
 
