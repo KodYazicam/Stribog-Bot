@@ -116,6 +116,11 @@
 - **Command Disable** - Disable commands per channel or server-wide
 - **Flexible Configuration** - Allow or deny specific roles
 
+### 💾 Configuration Backups
+- **Export** - Download settings, permission overrides, and disabled rules as JSON
+- **Safe Import** - Same-guild validation, dry run by default, atomic apply
+- **No Secrets** - Backups contain server configuration only, not tokens
+
 ---
 
 ## 📦 Requirements
@@ -361,6 +366,8 @@ If everything is correct, you should see:
 | `/permissions enable` | Administrator | Re-enable a disabled command | `/permissions enable command:meme channel:#general` |
 | `/permissions view` | Administrator | View rules for a command | `/permissions view command:ban` |
 | `/permissions list` | Administrator | List all permission overrides | `/permissions list` |
+| `/config export` | Administrator | Download a JSON backup of this server's configuration | `/config export` |
+| `/config import` | Administrator | Validate and restore a configuration backup | `/config import file:<attachment> confirm:true` |
 
 ### Moderation Commands
 
@@ -880,6 +887,11 @@ Then restart the bot.
 ### How do I backup the database?
 
 The database file is `database.sqlite` in the bot folder. Simply copy this file to back up all data.
+
+For server settings only, run `/config export` and keep the downloaded JSON
+file. `/config import` validates that backup and shows a dry run before any
+changes; add `confirm:true` to apply it. Imports are limited to the same guild
+so channel and role ids are never copied between servers.
 
 ### Can I run multiple bots from the same code?
 

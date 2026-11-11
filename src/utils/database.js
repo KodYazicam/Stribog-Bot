@@ -278,6 +278,7 @@ module.exports = {
     getGuild,
     insertGuild,
     updateGuildSetting,
+    GUILD_COLUMNS,
     getUserGuildData,
     insertUserGuildData,
     updateUserGuildXP,

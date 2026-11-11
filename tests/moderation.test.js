@@ -7,8 +7,10 @@ const kick = require('../src/commands/moderation/kick');
 const timeout = require('../src/commands/moderation/timeout');
 const warn = require('../src/commands/moderation/warn');
 const warningsCommand = require('../src/commands/moderation/warnings');
+const configCommand = require('../src/commands/admin/config');
 const interactionCreate = require('../src/events/interactionCreate');
 const database = require('../src/utils/database');
+const { buildGuildConfig, applyGuildConfig } = require('../src/utils/guildConfig');
 
 const BOT_ID = '900000000000000001';
 let sequence = 0;
@@ -16,6 +18,12 @@ let sequence = 0;
 function unique(prefix) {
     sequence += 1;
     return `${prefix}-${process.pid}-${Date.now()}-${sequence}`;
+}
+
+function deleteGuildConfig(guildId) {
+    database.db.prepare('DELETE FROM command_permissions WHERE guild_id = ?').run(guildId);
+    database.db.prepare('DELETE FROM disabled_commands WHERE guild_id = ?').run(guildId);
+    database.db.prepare('DELETE FROM guilds WHERE id = ?').run(guildId);
 }
 
 function makeUser(id, { bot = false } = {}) {
@@ -94,6 +102,8 @@ function makeInteraction(command, {
             },
             getString: name => options[name] ?? null,
             getInteger: name => options[name] ?? null,
+            getBoolean: name => options[name] ?? null,
+            getAttachment: name => options[name] ?? null,
             getSubcommand: () => options.subcommand ?? null
         },
         replied: false,
@@ -108,6 +118,9 @@ function makeInteraction(command, {
             this.replied = true;
             this.replies.push(payload);
             return payload;
+        },
+        async deferReply() {
+            this.deferred = true;
         },
         async followUp(payload) {
             this.replies.push(payload);
@@ -178,6 +191,8 @@ test('moderation commands declare least-privilege default permissions', () => {
     assert.equal(warn.data.default_member_permissions, String(PermissionFlagsBits.ModerateMembers));
     assert.equal(warningsCommand.data.default_member_permissions, String(PermissionFlagsBits.ModerateMembers));
     assert.deepEqual(warningsCommand.data.options.map(option => option.name), ['list', 'remove', 'clear']);
+    assert.equal(configCommand.data.default_member_permissions, String(PermissionFlagsBits.Administrator));
+    assert.deepEqual(configCommand.data.options.map(option => option.name), ['export', 'import']);
 });
 
 for (const testCase of moderationCommands) {
@@ -407,6 +422,215 @@ test('warnings clear clears only the current guild and user rows', async () => {
     } finally {
         database.clearWarnings.run(guildId, user.id);
         database.clearWarnings.run(otherGuildId, user.id);
+    }
+});
+
+test('config export produces a versioned, deterministic guild backup', async () => {
+    const guildId = unique('guild');
+    const roleId = '111111111111111111';
+    const channelId = '222222222222222222';
+
+    database.insertGuild.run(guildId);
+    database.updateGuildSetting('welcome_channel').run(channelId, guildId);
+    database.addCommandPermission.run(guildId, 'ban', roleId, 'allow');
+    database.disableCommand.run(guildId, 'meme', null);
+    database.disableCommand.run(guildId, 'meme', null);
+
+    const interaction = makeInteraction(configCommand, {
+        actor: makeActor(makeUser(unique('mod'))),
+        guildId,
+        options: { subcommand: 'export' }
+    });
+
+    try {
+        await configCommand.execute(interaction);
+
+        const file = interaction.replies[0].files[0];
+        const payload = JSON.parse(file.attachment.toString('utf8'));
+        assert.equal(file.name, `stribog-config-${guildId}.json`);
+        assert.equal(payload.schema_version, 1);
+        assert.equal(payload.guild_id, guildId);
+        assert.equal(payload.settings.welcome_channel, channelId);
+        assert.deepEqual(payload.command_permissions, [{
+            command_name: 'ban',
+            role_id: roleId,
+            permission_type: 'allow'
+        }]);
+        assert.deepEqual(payload.disabled_commands, [{ command_name: 'meme', channel_id: null }]);
+        assert.equal(JSON.stringify(payload).includes('TOKEN'), false);
+    } finally {
+        deleteGuildConfig(guildId);
+    }
+});
+
+test('config import dry-runs by default and applies only after confirmation', async () => {
+    const guildId = unique('guild');
+    const oldChannelId = '333333333333333333';
+    const newChannelId = '444444444444444444';
+    const roleId = '555555555555555555';
+    const payload = {
+        schema_version: 1,
+        guild_id: guildId,
+        settings: {
+            welcome_channel: newChannelId,
+            leveling_enabled: 0
+        },
+        command_permissions: [{
+            command_name: 'ping',
+            role_id: roleId,
+            permission_type: 'allow'
+        }],
+        disabled_commands: [{ command_name: 'meme', channel_id: null }]
+    };
+    const originalFetch = global.fetch;
+    global.fetch = async () => ({
+        ok: true,
+        text: async () => JSON.stringify(payload)
+    });
+
+    database.insertGuild.run(guildId);
+    database.updateGuildSetting('welcome_channel').run(oldChannelId, guildId);
+
+    try {
+        const dryRun = makeInteraction(configCommand, {
+            actor: makeActor(makeUser(unique('mod'))),
+            guildId,
+            options: {
+                subcommand: 'import',
+                file: { size: 512, url: 'https://example.invalid/config.json' },
+                confirm: false
+            }
+        });
+
+        await configCommand.execute(dryRun);
+
+        assert.match(replyTitle(dryRun), /Import Dry Run/);
+        assert.equal(database.getGuild.get(guildId).welcome_channel, oldChannelId);
+        assert.equal(database.getCommandPermissions.all(guildId, 'ping').length, 0);
+
+        const confirmed = makeInteraction(configCommand, {
+            actor: makeActor(makeUser(unique('mod'))),
+            guildId,
+            options: {
+                subcommand: 'import',
+                file: { size: 512, url: 'https://example.invalid/config.json' },
+                confirm: true
+            }
+        });
+
+        await configCommand.execute(confirmed);
+
+        assert.match(replyTitle(confirmed), /Configuration Imported/);
+        assert.equal(database.getGuild.get(guildId).welcome_channel, newChannelId);
+        assert.equal(database.getGuild.get(guildId).leveling_enabled, 0);
+        assert.equal(database.getCommandPermissions.all(guildId, 'ping').length, 1);
+        assert.equal(database.isCommandDisabled.get(guildId, 'meme', '999').command_name, 'meme');
+    } finally {
+        global.fetch = originalFetch;
+        deleteGuildConfig(guildId);
+    }
+});
+
+test('config import rejects other guilds and unknown settings', async () => {
+    const guildId = unique('guild');
+    const otherGuildId = unique('guild');
+    let payload = {
+        schema_version: 1,
+        guild_id: otherGuildId,
+        settings: {},
+        command_permissions: [],
+        disabled_commands: []
+    };
+    const originalFetch = global.fetch;
+    const originalError = console.error;
+    global.fetch = async () => ({
+        ok: true,
+        text: async () => JSON.stringify(payload)
+    });
+    console.error = () => {};
+
+    try {
+        const wrongGuild = makeInteraction(configCommand, {
+            actor: makeActor(makeUser(unique('mod'))),
+            guildId,
+            options: {
+                subcommand: 'import',
+                file: { size: 512, url: 'https://example.invalid/config.json' },
+                confirm: true
+            }
+        });
+
+        await configCommand.execute(wrongGuild);
+        assert.match(replyDescription(wrongGuild), /different guild/);
+
+        payload = {
+            schema_version: 1,
+            guild_id: guildId,
+            settings: { not_a_setting: 'x' },
+            command_permissions: [],
+            disabled_commands: []
+        };
+        const unknownSetting = makeInteraction(configCommand, {
+            actor: makeActor(makeUser(unique('mod'))),
+            guildId,
+            options: {
+                subcommand: 'import',
+                file: { size: 512, url: 'https://example.invalid/config.json' },
+                confirm: true
+            }
+        });
+
+        await configCommand.execute(unknownSetting);
+        assert.match(replyDescription(unknownSetting), /Unknown guild setting/);
+    } finally {
+        global.fetch = originalFetch;
+        console.error = originalError;
+        deleteGuildConfig(guildId);
+    }
+});
+
+test('config import rolls back settings and rules when a write fails', () => {
+    const guildId = unique('guild');
+    const oldChannelId = '666666666666666666';
+    const newChannelId = '777777777777777777';
+    const oldRoleId = '888888888888888888';
+    const newRoleId = '999999999999999999';
+
+    database.insertGuild.run(guildId);
+    database.updateGuildSetting('welcome_channel').run(oldChannelId, guildId);
+    database.addCommandPermission.run(guildId, 'ban', oldRoleId, 'allow');
+
+    const payload = {
+        schema_version: 1,
+        guild_id: guildId,
+        settings: { welcome_channel: newChannelId },
+        command_permissions: [{
+            command_name: 'ping',
+            role_id: newRoleId,
+            permission_type: 'allow'
+        }],
+        disabled_commands: []
+    };
+
+    database.db.exec('DROP TRIGGER IF EXISTS fail_config_import');
+    database.db.exec(`
+        CREATE TRIGGER fail_config_import
+        BEFORE INSERT ON command_permissions
+        WHEN NEW.guild_id = '${guildId}'
+        BEGIN
+            SELECT RAISE(ABORT, 'forced config failure');
+        END
+    `);
+
+    try {
+        assert.throws(() => applyGuildConfig(guildId, payload), /forced config failure/);
+        assert.equal(database.getGuild.get(guildId).welcome_channel, oldChannelId);
+        const permissions = database.getCommandPermissions.all(guildId, 'ban');
+        assert.equal(permissions.length, 1);
+        assert.equal(permissions[0].role_id, oldRoleId);
+    } finally {
+        database.db.exec('DROP TRIGGER IF EXISTS fail_config_import');
+        deleteGuildConfig(guildId);
     }
 });
 
