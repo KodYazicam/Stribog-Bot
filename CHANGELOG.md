@@ -17,6 +17,9 @@ All notable changes to this project are documented here. The format follows
   persistence in SQLite.
 - `npm run commands:list` to audit registered slash commands and
   `npm run docs:check` to verify the README command reference against them.
+- `/config export|import` for versioned, same-guild backups of settings,
+  permission overrides, and disabled-command rules. Imports dry-run by default
+  and apply atomically after confirmation.
 
 ### Changed
 
