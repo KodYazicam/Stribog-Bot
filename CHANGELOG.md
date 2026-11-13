@@ -8,6 +8,9 @@ All notable changes to this project are documented here. The format follows
 
 ### Added
 
+- Economy commands now run from both slash and the configured prefix
+  (`PREFIX`, default `!`). Prefix execution is generated from the slash
+  definitions and reuses the same handlers, permissions, and cooldowns.
 - `/warnings list|remove|clear` for per-guild warning history management. Removals
   are scoped by guild, target, and warning id.
 - Successful `/warn` actions now persist a warning row, matching the documented

@@ -2,6 +2,7 @@ const { Events, EmbedBuilder } = require('discord.js');
 const { colors } = require('../config/config');
 const { getUserGuildData, updateUserXP, updateUserLevel, getGuild, insertGuild } = require('../utils/database');
 const { xpRequiredForLevel, randomXpGain, xpCooldown } = require('../utils/leveling');
+const { handlePrefixMessage } = require('../utils/prefix');
 
 const xpCooldowns = new Map();
 const antiSpamMap = new Map();
@@ -12,6 +13,12 @@ module.exports = {
         if (message.author.bot || !message.guild) return;
 
         insertGuild.run(message.guild.id);
+
+        try {
+            if (await handlePrefixMessage(message, client)) return;
+        } catch (error) {
+            console.error('Prefix command error:', error);
+        }
 
         try {
             await handleLeveling(message, client);
