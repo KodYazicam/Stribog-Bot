@@ -90,8 +90,9 @@ module.exports = {
 
                 if (now < expirationTime) {
                     const expiredTimestamp = Math.round(expirationTime / 1000);
+                    const commandLabel = interaction.commandLabel || `/${command.data.name}`;
                     return interaction.reply({
-                        content: `Please wait <t:${expiredTimestamp}:R> before using \`/${command.data.name}\` again.`,
+                        content: `Please wait <t:${expiredTimestamp}:R> before using \`${commandLabel}\` again.`,
                         ephemeral: true
                     });
                 }

@@ -14,6 +14,7 @@ module.exports = {
         info: 'ℹ️'
     },
     cooldown: 3,
+    prefix: process.env.PREFIX || '!',
     owner: process.env.OWNER_ID || null,
     economy: {
         dailyAmount: 100,

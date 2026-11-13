@@ -263,11 +263,19 @@ GUILD_ID=paste_your_server_id_here
 
 # Your Discord user id (optional)
 OWNER_ID=paste_your_user_id_here
+
+# Prefix for economy commands (default: !)
+PREFIX=!
 ```
 
 `/weather` uses [Open-Meteo](https://open-meteo.com/) and needs **no API key**. There is no `WEATHER_API_KEY`.
 
 Economy is **per guild**. `/give` is a SQLite transaction. Tickets need a **support role** (`/ticket setup … support_role:@Staff`) or staff without Administrator cannot see the channel.
+
+Economy commands work with both slash and the configured prefix (default `!`).
+Prefix and slash share the same handler, permissions, and cooldown. Examples:
+`!balance @user`, `!deposit all`, `!give @user 100`, `!shop view`,
+`!shop add "VIP Pass" 1000 "VIP access" @VIP`, `!leaderboard levels`.
 
 `/invite` does **not** request Administrator.
 
@@ -392,6 +400,9 @@ If everything is correct, you should see:
 | `/role info` | Manage Roles | Show role information | `/role info role:@VIP` |
 
 ### Economy Commands
+
+Economy commands are available as slash commands and with the bot prefix
+(`PREFIX`, default `!`). Both forms use the same handler and cooldown.
 
 | Command | Permission | Description | Example |
 |---------|------------|-------------|---------|
