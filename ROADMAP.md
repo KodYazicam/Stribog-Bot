@@ -13,7 +13,7 @@ real problems. Open an issue before starting a large change.
 
 - Extend prefix execution to moderation, ticket, and utility commands.
 - Export/import for per-guild configuration.
-- Structured audit logs for moderation actions.
+- Structured audit logs for the remaining moderation actions.
 - Optional Postgres backend for deployments that outgrow SQLite.
 
 ## Later

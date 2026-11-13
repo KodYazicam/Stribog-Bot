@@ -77,7 +77,7 @@
 - **Support role** - `/ticket setup` takes `support_role` so staff can see tickets
 - **Transcripts** - closing a ticket posts a `.txt` transcript to `ticket_log_channel`
 - **Staff Controls** - Add/remove users from tickets; close is owner or staff only
-- **Mod log** - ban/kick/timeout/warn/warning removals/clear/lock/role/nuke and confirmed config imports write to `mod_log_channel` if set
+- **Mod log** - ban/kick/timeout/warn/warning removals/clear/lock/role/nuke, automod triggers, and confirmed config imports write to `mod_log_channel` if set
 
 ### 📝 Logging System
 - **Message Logs** - Track edited and deleted messages
@@ -91,6 +91,7 @@
 - **Bad Words Filter** - Filter profanity
 - **Caps Filter** - Prevent excessive caps
 - **Mention Spam** - Block mass mentions
+- **Audit trail** - Every trigger writes the rule, target, channel, action, and before/after state to `mod_log_channel`. Message content, matched words, and URLs are never logged, and audit delivery continues if the source channel was deleted.
 
 ### 🎮 Fun Commands
 - **8ball** - Ask the magic 8-ball
