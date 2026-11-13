@@ -1,10 +1,19 @@
 const { SlashCommandBuilder, EmbedBuilder, PermissionFlagsBits } = require('discord.js');
 const { colors } = require('../../config/config');
 const { getWarnings, clearWarnings, deleteWarningById } = require('../../utils/database');
+const { sendModLog } = require('../../utils/modlog');
 
 function truncate(value, maxLength = 1024) {
     if (value.length <= maxLength) return value;
     return `${value.slice(0, maxLength - 1)}…`;
+}
+
+function warningCount(count) {
+    return `${count} warning${count === 1 ? '' : 's'}`;
+}
+
+function guildLabel(guild) {
+    return `${guild.name} (${guild.id})`;
 }
 
 module.exports = {
@@ -82,6 +91,8 @@ module.exports = {
 
         if (subcommand === 'remove') {
             const warningId = interaction.options.getInteger('id');
+            const warnings = getWarnings.all(interaction.guild.id, target.id);
+            const warning = warnings.find(row => row.id === warningId);
             const result = deleteWarningById.run(warningId, interaction.guild.id, target.id);
 
             if (result.changes === 0) {
@@ -94,6 +105,21 @@ module.exports = {
                     ephemeral: true
                 });
             }
+
+            await sendModLog(interaction.guild, {
+                title: 'Warning Removed',
+                description: `Removed warning #${warningId} from <@${target.id}>.`,
+                color: colors.warning,
+                moderator: interaction.user,
+                target,
+                fields: [
+                    { name: 'Guild', value: guildLabel(interaction.guild) },
+                    { name: 'Warning ID', value: String(warningId), inline: true },
+                    { name: 'Reason', value: truncate(warning?.reason || 'Unknown') },
+                    { name: 'Before', value: warningCount(warnings.length), inline: true },
+                    { name: 'After', value: warningCount(warnings.length - result.changes), inline: true }
+                ]
+            });
 
             return interaction.reply({
                 embeds: [
@@ -119,6 +145,20 @@ module.exports = {
             }
 
             clearWarnings.run(interaction.guild.id, target.id);
+
+            await sendModLog(interaction.guild, {
+                title: 'Warnings Cleared',
+                description: `Cleared **${warnings.length}** warning${warnings.length === 1 ? '' : 's'} for <@${target.id}>.`,
+                color: colors.warning,
+                moderator: interaction.user,
+                target,
+                fields: [
+                    { name: 'Guild', value: guildLabel(interaction.guild) },
+                    { name: 'Cleared Warnings', value: String(warnings.length), inline: true },
+                    { name: 'Before', value: warningCount(warnings.length), inline: true },
+                    { name: 'After', value: warningCount(0), inline: true }
+                ]
+            });
 
             return interaction.reply({
                 embeds: [
