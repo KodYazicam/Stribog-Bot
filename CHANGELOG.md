@@ -8,9 +8,13 @@ All notable changes to this project are documented here. The format follows
 
 ### Added
 
-- Economy commands now run from both slash and the configured prefix
-  (`PREFIX`, default `!`). Prefix execution is generated from the slash
-  definitions and reuses the same handlers, permissions, and cooldowns.
+- Prefix execution now covers the economy, fun, info, leveling, admin, and
+  giveaway groups. Prefix commands are generated from the slash definitions and
+  reuse the same handlers, permissions, and cooldowns. Administrator and
+  ManageGuild requirements are enforced on the prefix path, and `/config import`
+  accepts a JSON file attached to the command message.
+- `PREFIX` validation rejects empty, whitespace, overlong, alphanumeric-starting,
+  and Discord-reserved values, falling back to `!`.
 - `/warnings list|remove|clear` for per-guild warning history management. Removals
   are scoped by guild, target, and warning id.
 - Successful `/warn` actions now persist a warning row, matching the documented

@@ -11,7 +11,7 @@ real problems. Open an issue before starting a large change.
 
 ## Next
 
-- Extend prefix execution to the remaining command groups.
+- Extend prefix execution to moderation, ticket, and utility commands.
 - Export/import for per-guild configuration.
 - Structured audit logs for moderation actions.
 - Optional Postgres backend for deployments that outgrow SQLite.
