@@ -1,3 +1,5 @@
+const { resolvePrefix } = require('./prefix');
+
 module.exports = {
     colors: {
         primary: 0x5865F2,
@@ -14,7 +16,7 @@ module.exports = {
         info: 'ℹ️'
     },
     cooldown: 3,
-    prefix: process.env.PREFIX || '!',
+    prefix: resolvePrefix(process.env.PREFIX),
     owner: process.env.OWNER_ID || null,
     economy: {
         dailyAmount: 100,

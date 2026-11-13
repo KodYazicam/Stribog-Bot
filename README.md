@@ -264,7 +264,8 @@ GUILD_ID=paste_your_server_id_here
 # Your Discord user id (optional)
 OWNER_ID=paste_your_user_id_here
 
-# Prefix for economy commands (default: !)
+# Prefix for prefix-enabled command groups (default: !)
+# Max 5 characters, must not start with a letter/number, and must not contain / @ # < >
 PREFIX=!
 ```
 
@@ -272,10 +273,13 @@ PREFIX=!
 
 Economy is **per guild**. `/give` is a SQLite transaction. Tickets need a **support role** (`/ticket setup … support_role:@Staff`) or staff without Administrator cannot see the channel.
 
-Economy commands work with both slash and the configured prefix (default `!`).
-Prefix and slash share the same handler, permissions, and cooldown. Examples:
-`!balance @user`, `!deposit all`, `!give @user 100`, `!shop view`,
-`!shop add "VIP Pass" 1000 "VIP access" @VIP`, `!leaderboard levels`.
+Commands in the economy, fun, info, leveling, admin, and giveaway groups work
+with both slash and the configured prefix (default `!`). Prefix and slash share
+the same handler, permissions, and cooldown. Admin and giveaway commands keep
+their Discord default permission requirements on the prefix path too. Examples:
+`!balance @user`, `!8ball "Will it work?"`, `!rank`, `!automod status`,
+`!giveaway start "Nitro" 1h 2`. Moderation, ticket, and utility commands remain
+slash-only for now.
 
 `/invite` does **not** request Administrator.
 
@@ -337,6 +341,11 @@ If everything is correct, you should see:
 ---
 
 ## 📜 Commands
+
+Slash commands are always available. The bot prefix (default `!`) also runs
+commands in the economy, fun, info, leveling, admin, and giveaway groups. Both
+forms use the same handlers, permission checks, and cooldowns. Moderation,
+ticket, and utility commands remain slash-only for now.
 
 > **Permissions** are the Discord defaults declared by each command. `Everyone`
 > means no default restriction. Admins can override command access with

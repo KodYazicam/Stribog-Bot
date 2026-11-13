@@ -3,7 +3,14 @@ const { colors, prefix: defaultPrefix } = require('../config/config');
 
 // Prefix execution is enabled per command category. Add a category here after
 // its commands have been checked against the prefix option parser.
-const PREFIX_CATEGORIES = new Set(['economy']);
+const PREFIX_CATEGORIES = new Set([
+    'economy',
+    'fun',
+    'info',
+    'leveling',
+    'admin',
+    'giveaway'
+]);
 
 function errorEmbed(description) {
     return new EmbedBuilder()
@@ -186,6 +193,23 @@ async function parsePrefixCommand(content, message, client, prefix = defaultPref
 
     const values = {};
     for (const option of optionDefinitions(command, subcommandName)) {
+        if (optionType(option) === ApplicationCommandOptionType.Attachment) {
+            const attachment = message.attachments?.first?.() ?? null;
+            if (!attachment) {
+                if (option.required) {
+                    return {
+                        command,
+                        subcommand: subcommandName,
+                        error: `Missing required attachment \`${option.name}\`. Attach a file to the command message. Usage: ${buildUsage(prefix, command, subcommandName)}`
+                    };
+                }
+                values[option.name] = null;
+                continue;
+            }
+            values[option.name] = attachment;
+            continue;
+        }
+
         const raw = args.shift();
         if (raw === undefined) {
             if (option.required) {
@@ -300,6 +324,24 @@ function createPrefixInteraction(message, parsed, prefix = defaultPrefix) {
     };
 }
 
+function requiredDefaultPermission(command) {
+    const raw = command.data.default_member_permissions;
+    if (raw === null || raw === undefined || raw === '') return null;
+
+    try {
+        const bits = BigInt(raw);
+        return bits === 0n ? null : bits;
+    } catch {
+        return null;
+    }
+}
+
+function hasDefaultPermissions(command, member) {
+    const required = requiredDefaultPermission(command);
+    if (!required) return true;
+    return Boolean(member.permissions?.has(required));
+}
+
 async function handlePrefixMessage(message, client, { prefix = defaultPrefix } = {}) {
     if (!prefix || message.author?.bot || !message.guild || !message.member) return false;
     if (!message.content?.startsWith(prefix)) return false;
@@ -315,6 +357,15 @@ async function handlePrefixMessage(message, client, { prefix = defaultPrefix } =
         return true;
     }
 
+    if (!hasDefaultPermissions(parsed.command, message.member)) {
+        await message.reply({
+            embeds: [
+                errorEmbed(`You do not have permission to use \`${prefix}${parsed.command.data.name}\`.`)
+            ]
+        });
+        return true;
+    }
+
     const interaction = createPrefixInteraction(message, parsed, prefix);
     const { execute } = require('../events/interactionCreate');
     await execute(interaction, client);
@@ -326,5 +377,7 @@ module.exports = {
     handlePrefixMessage,
     parsePrefixCommand,
     createPrefixInteraction,
-    buildUsage
+    buildUsage,
+    hasDefaultPermissions,
+    requiredDefaultPermission
 };
