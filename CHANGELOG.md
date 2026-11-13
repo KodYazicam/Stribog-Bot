@@ -8,6 +8,10 @@ All notable changes to this project are documented here. The format follows
 
 ### Added
 
+- AutoMod triggers now write structured audit entries to the mod-log channel
+  with the rule, target, channel, actions, before/after state, and non-sensitive
+  metadata. Message content, matched words, and URLs are never logged, and audit
+  delivery continues when the source channel is deleted or message actions fail.
 - Prefix execution now covers the economy, fun, info, leveling, admin, and
   giveaway groups. Prefix commands are generated from the slash definitions and
   reuse the same handlers, permissions, and cooldowns. Administrator and
