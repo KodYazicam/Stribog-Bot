@@ -2,10 +2,11 @@ const { EmbedBuilder } = require('discord.js');
 const { colors } = require('../config/config');
 const { getGuild } = require('./database');
 
-async function sendModLog(guild, { title, description, fields = [], color = colors.danger, moderator, target }) {
+async function sendModLog(guild, { title, description, fields = [], color = colors.danger, moderator, target, channelId }) {
     const guildData = getGuild.get(guild.id);
-    if (!guildData?.mod_log_channel) return;
-    const channel = await guild.channels.fetch(guildData.mod_log_channel).catch(() => null);
+    const targetChannelId = channelId ?? guildData?.mod_log_channel;
+    if (!targetChannelId) return;
+    const channel = await guild.channels.fetch(targetChannelId).catch(() => null);
     if (!channel) return;
     const embed = new EmbedBuilder()
         .setColor(color)

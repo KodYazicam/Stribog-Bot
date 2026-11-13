@@ -133,6 +133,29 @@ function makeInteraction(command, {
     };
 }
 
+function captureModLog(interaction) {
+    const channelId = unique('channel');
+    const sent = [];
+    database.insertGuild.run(interaction.guild.id);
+    database.updateGuildSetting('mod_log_channel').run(channelId, interaction.guild.id);
+    interaction.guild.channels.fetch = async id => {
+        if (id !== channelId) return null;
+        return {
+            send: async payload => {
+                sent.push(payload);
+                return payload;
+            }
+        };
+    };
+    return sent;
+}
+
+function modLogFields(payload) {
+    return Object.fromEntries(
+        (payload.embeds[0].data.fields || []).map(field => [field.name, field.value])
+    );
+}
+
 function replyDescription(interaction) {
     return interaction.replies.at(-1)?.embeds?.[0]?.data?.description || '';
 }
@@ -367,19 +390,23 @@ test('warnings remove deletes only a matching guild and user warning', async () 
             guildId,
             options: { subcommand: 'remove', user, id: otherGuildIdWarning }
         });
+        const failedLog = captureModLog(wrongTarget);
 
         await warningsCommand.execute(wrongTarget);
 
         assert.match(replyDescription(wrongTarget), /not found/);
+        assert.equal(failedLog.length, 0);
         assert.equal(database.getWarnings.all(guildId, user.id).length, 1);
         assert.equal(database.getWarnings.all(otherGuildId, user.id).length, 1);
 
+        const actor = makeActor(makeUser(unique('mod')));
         const interaction = makeInteraction(warningsCommand, {
             target: user,
-            actor: makeActor(makeUser(unique('mod'))),
+            actor,
             guildId,
             options: { subcommand: 'remove', user, id: currentId }
         });
+        const successLog = captureModLog(interaction);
 
         await warningsCommand.execute(interaction);
 
@@ -388,10 +415,24 @@ test('warnings remove deletes only a matching guild and user warning', async () 
         assert.equal(database.getWarnings.all(otherGuildId, user.id).length, 1);
         assert.equal(database.getWarnings.all(guildId, otherUser.id).length, 1);
         assert.equal(database.getWarnings.all(guildId, otherUser.id)[0].id, otherUserId);
+
+        assert.equal(successLog.length, 1);
+        const embed = successLog[0].embeds[0].data;
+        const fields = modLogFields(successLog[0]);
+        assert.equal(embed.title, 'Warning Removed');
+        assert.ok(embed.timestamp);
+        assert.match(fields.Moderator, new RegExp(actor.user.id));
+        assert.match(fields.Target, new RegExp(user.id));
+        assert.match(fields.Guild, new RegExp(guildId));
+        assert.equal(fields['Warning ID'], String(currentId));
+        assert.match(fields.Reason, /current/);
+        assert.match(fields.Before, /1 warning/);
+        assert.match(fields.After, /0 warnings/);
     } finally {
         database.clearWarnings.run(guildId, user.id);
         database.clearWarnings.run(otherGuildId, user.id);
         database.clearWarnings.run(guildId, otherUser.id);
+        deleteGuildConfig(guildId);
     }
 });
 
@@ -406,12 +447,14 @@ test('warnings clear clears only the current guild and user rows', async () => {
     database.addWarning.run(guildId, user.id, moderatorId, 'second', now);
     database.addWarning.run(otherGuildId, user.id, moderatorId, 'other guild', now);
 
+    const actor = makeActor(makeUser(unique('mod')));
     const interaction = makeInteraction(warningsCommand, {
         target: user,
-        actor: makeActor(makeUser(unique('mod'))),
+        actor,
         guildId,
         options: { subcommand: 'clear', user }
     });
+    const sent = captureModLog(interaction);
 
     try {
         await warningsCommand.execute(interaction);
@@ -419,9 +462,43 @@ test('warnings clear clears only the current guild and user rows', async () => {
         assert.match(replyDescription(interaction), /Cleared \*\*2\*\* warnings/);
         assert.equal(database.getWarnings.all(guildId, user.id).length, 0);
         assert.equal(database.getWarnings.all(otherGuildId, user.id).length, 1);
+
+        assert.equal(sent.length, 1);
+        const embed = sent[0].embeds[0].data;
+        const fields = modLogFields(sent[0]);
+        assert.equal(embed.title, 'Warnings Cleared');
+        assert.ok(embed.timestamp);
+        assert.match(fields.Moderator, new RegExp(actor.user.id));
+        assert.match(fields.Target, new RegExp(user.id));
+        assert.match(fields.Guild, new RegExp(guildId));
+        assert.equal(fields['Cleared Warnings'], '2');
+        assert.match(fields.Before, /2 warnings/);
+        assert.match(fields.After, /0 warnings/);
     } finally {
         database.clearWarnings.run(guildId, user.id);
         database.clearWarnings.run(otherGuildId, user.id);
+        deleteGuildConfig(guildId);
+    }
+});
+
+test('warnings clear writes no audit entry when the history is already empty', async () => {
+    const guildId = unique('guild');
+    const user = makeUser(unique('user'));
+    const interaction = makeInteraction(warningsCommand, {
+        target: user,
+        actor: makeActor(makeUser(unique('mod'))),
+        guildId,
+        options: { subcommand: 'clear', user }
+    });
+    const sent = captureModLog(interaction);
+
+    try {
+        await warningsCommand.execute(interaction);
+
+        assert.match(replyDescription(interaction), /No warnings found/);
+        assert.equal(sent.length, 0);
+    } finally {
+        deleteGuildConfig(guildId);
     }
 });
 
@@ -473,7 +550,9 @@ test('config import dry-runs by default and applies only after confirmation', as
         guild_id: guildId,
         settings: {
             welcome_channel: newChannelId,
-            leveling_enabled: 0
+            leveling_enabled: 0,
+            welcome_message: 'TOKEN=super-secret-do-not-log',
+            mod_log_channel: null
         },
         command_permissions: [{
             command_name: 'ping',
@@ -492,8 +571,9 @@ test('config import dry-runs by default and applies only after confirmation', as
     database.updateGuildSetting('welcome_channel').run(oldChannelId, guildId);
 
     try {
+        const dryRunActor = makeActor(makeUser(unique('mod')));
         const dryRun = makeInteraction(configCommand, {
-            actor: makeActor(makeUser(unique('mod'))),
+            actor: dryRunActor,
             guildId,
             options: {
                 subcommand: 'import',
@@ -501,15 +581,18 @@ test('config import dry-runs by default and applies only after confirmation', as
                 confirm: false
             }
         });
+        const dryRunLog = captureModLog(dryRun);
 
         await configCommand.execute(dryRun);
 
         assert.match(replyTitle(dryRun), /Import Dry Run/);
+        assert.equal(dryRunLog.length, 0);
         assert.equal(database.getGuild.get(guildId).welcome_channel, oldChannelId);
         assert.equal(database.getCommandPermissions.all(guildId, 'ping').length, 0);
 
+        const confirmedActor = makeActor(makeUser(unique('mod')));
         const confirmed = makeInteraction(configCommand, {
-            actor: makeActor(makeUser(unique('mod'))),
+            actor: confirmedActor,
             guildId,
             options: {
                 subcommand: 'import',
@@ -517,14 +600,30 @@ test('config import dry-runs by default and applies only after confirmation', as
                 confirm: true
             }
         });
+        const confirmedLog = captureModLog(confirmed);
 
         await configCommand.execute(confirmed);
 
         assert.match(replyTitle(confirmed), /Configuration Imported/);
         assert.equal(database.getGuild.get(guildId).welcome_channel, newChannelId);
         assert.equal(database.getGuild.get(guildId).leveling_enabled, 0);
+        assert.equal(database.getGuild.get(guildId).mod_log_channel, null);
         assert.equal(database.getCommandPermissions.all(guildId, 'ping').length, 1);
         assert.equal(database.isCommandDisabled.get(guildId, 'meme', '999').command_name, 'meme');
+
+        assert.equal(confirmedLog.length, 1);
+        const embed = confirmedLog[0].embeds[0].data;
+        const fields = modLogFields(confirmedLog[0]);
+        assert.equal(embed.title, 'Configuration Imported');
+        assert.ok(embed.timestamp);
+        assert.match(fields.Moderator, new RegExp(confirmedActor.user.id));
+        assert.match(fields.Guild, new RegExp(guildId));
+        assert.match(fields.Before, /Settings:/);
+        assert.match(fields.After, /Settings:/);
+        assert.match(fields.Imported, /Settings: \*\*4\*\*/);
+        assert.match(fields.Imported, /Permission rules: \*\*1\*\*/);
+        assert.match(fields.Imported, /Disabled-command rules: \*\*1\*\*/);
+        assert.equal(JSON.stringify(confirmedLog[0]).includes('super-secret-do-not-log'), false);
     } finally {
         global.fetch = originalFetch;
         deleteGuildConfig(guildId);
@@ -559,9 +658,11 @@ test('config import rejects other guilds and unknown settings', async () => {
                 confirm: true
             }
         });
+        const wrongGuildLog = captureModLog(wrongGuild);
 
         await configCommand.execute(wrongGuild);
         assert.match(replyDescription(wrongGuild), /different guild/);
+        assert.equal(wrongGuildLog.length, 0);
 
         payload = {
             schema_version: 1,
@@ -579,9 +680,11 @@ test('config import rejects other guilds and unknown settings', async () => {
                 confirm: true
             }
         });
+        const unknownSettingLog = captureModLog(unknownSetting);
 
         await configCommand.execute(unknownSetting);
         assert.match(replyDescription(unknownSetting), /Unknown guild setting/);
+        assert.equal(unknownSettingLog.length, 0);
     } finally {
         global.fetch = originalFetch;
         console.error = originalError;

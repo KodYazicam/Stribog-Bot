@@ -6,6 +6,7 @@ const {
 } = require('discord.js');
 const { colors } = require('../../config/config');
 const { buildGuildConfig, validateGuildConfig, applyGuildConfig } = require('../../utils/guildConfig');
+const { sendModLog } = require('../../utils/modlog');
 
 const MAX_IMPORT_BYTES = 1024 * 1024;
 
@@ -15,6 +16,22 @@ function summaryDescription(config) {
         `Permission rules: **${config.command_permissions.length}**`,
         `Disabled-command rules: **${config.disabled_commands.length}**`
     ].join('\n');
+}
+
+function configuredSettingCount(config) {
+    return Object.values(config.settings).filter(value => value !== null && value !== '').length;
+}
+
+function auditSummary(config) {
+    return [
+        `Settings: **${configuredSettingCount(config)}**`,
+        `Permission rules: **${config.command_permissions.length}**`,
+        `Disabled-command rules: **${config.disabled_commands.length}**`
+    ].join(' • ');
+}
+
+function guildLabel(guild) {
+    return `${guild.name} (${guild.id})`;
 }
 
 module.exports = {
@@ -108,7 +125,31 @@ module.exports = {
                 });
             }
 
+            const before = buildGuildConfig(interaction.guild.id);
+            const auditChannelId = before.settings.mod_log_channel;
             const applied = applyGuildConfig(interaction.guild.id, payload);
+            const after = buildGuildConfig(interaction.guild.id);
+
+            await sendModLog(interaction.guild, {
+                channelId: auditChannelId,
+                title: 'Configuration Imported',
+                description: 'A configuration backup was applied to this server.',
+                color: colors.warning,
+                moderator: interaction.user,
+                fields: [
+                    { name: 'Guild', value: guildLabel(interaction.guild) },
+                    { name: 'Before', value: auditSummary(before) },
+                    { name: 'After', value: auditSummary(after) },
+                    {
+                        name: 'Imported',
+                        value: [
+                            `Settings: **${applied.settings}**`,
+                            `Permission rules: **${applied.command_permissions}**`,
+                            `Disabled-command rules: **${applied.disabled_commands}**`
+                        ].join(' • ')
+                    }
+                ]
+            });
 
             return interaction.editReply({
                 embeds: [

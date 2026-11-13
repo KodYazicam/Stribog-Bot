@@ -23,6 +23,9 @@ All notable changes to this project are documented here. The format follows
 
 ### Changed
 
+- `/warnings remove|clear` and confirmed `/config import` actions now write an
+  audit entry to the configured mod-log channel with the actor, guild, and
+  before/after summaries. Raw configuration values are not logged.
 - README command reference now uses the shipped command, subcommand, and option
   names and lists each command's default permission.
 - Added issue templates, pull request template, Dependabot, roadmap, and changelog.
