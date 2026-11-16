@@ -1,6 +1,7 @@
 const { SlashCommandBuilder, EmbedBuilder, PermissionFlagsBits } = require('discord.js');
 const { colors } = require('../../config/config');
 const { getGuild, insertGuild, updateGuildSetting } = require('../../utils/database');
+const { normalizeHostname } = require('../../utils/domains');
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -211,7 +212,19 @@ module.exports = {
             });
 
         } else if (subcommand === 'whitelist') {
-            const domain = interaction.options.getString('domain').toLowerCase();
+            const domain = normalizeHostname(interaction.options.getString('domain'));
+
+            if (!domain) {
+                return interaction.reply({
+                    embeds: [
+                        new EmbedBuilder()
+                            .setColor(colors.danger)
+                            .setDescription('Enter a bare hostname such as `youtube.com`.')
+                    ],
+                    ephemeral: true
+                });
+            }
+
             let whitelist = [];
             
             if (guildData?.automod_whitelist) {
@@ -219,9 +232,10 @@ module.exports = {
                     whitelist = JSON.parse(guildData.automod_whitelist);
                 } catch {}
             }
+            if (!Array.isArray(whitelist)) whitelist = [];
 
-            if (whitelist.includes(domain)) {
-                whitelist = whitelist.filter(d => d !== domain);
+            if (whitelist.some(entry => normalizeHostname(entry) === domain)) {
+                whitelist = whitelist.filter(entry => normalizeHostname(entry) !== domain);
                 updateGuildSetting('automod_whitelist').run(JSON.stringify(whitelist), interaction.guild.id);
 
                 await interaction.reply({

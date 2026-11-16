@@ -4,6 +4,7 @@ const { getUserGuildData, updateUserXP, updateUserLevel, getGuild, insertGuild }
 const { xpRequiredForLevel, randomXpGain, xpCooldown } = require('../utils/leveling');
 const { handlePrefixMessage } = require('../utils/prefix');
 const { logAutoModAction } = require('../utils/automodAudit');
+const { matchesWhitelistedHostname } = require('../utils/domains');
 
 const xpCooldowns = new Map();
 const antiSpamMap = new Map();
@@ -211,7 +212,7 @@ async function handleAutoMod(message, client) {
                     blockedUrls += 1;
                     continue;
                 }
-                if (!whitelistedDomains.some(entry => domain.includes(entry))) {
+                if (!matchesWhitelistedHostname(domain, whitelistedDomains)) {
                     blockedUrls += 1;
                 }
             }
