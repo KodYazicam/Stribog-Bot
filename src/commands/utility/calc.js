@@ -16,9 +16,9 @@ module.exports = {
         const expression = interaction.options.getString('expression');
 
         try {
-            const sanitized = expression.replace(/[^0-9+\-*/().%^\s]/g, '');
-            
-            if (sanitized !== expression.replace(/\s/g, '')) {
+            const compact = expression.replace(/\s/g, '');
+
+            if (!/^[0-9+\-*/().%^]+$/.test(compact)) {
                 return interaction.reply({
                     embeds: [
                         new EmbedBuilder()
@@ -29,9 +29,7 @@ module.exports = {
                 });
             }
 
-            const processed = sanitized.replace(/\^/g, '**');
-            
-            const result = safeEval(processed);
+            const result = safeEval(expression);
 
             if (result === null || !isFinite(result)) {
                 return interaction.reply({
@@ -75,62 +73,120 @@ module.exports = {
 
 function safeEval(expr) {
     try {
-        const tokens = expr.match(/(\d+\.?\d*|\+|\-|\*|\/|\%|\*\*|\(|\))/g);
-        if (!tokens) return null;
-
-        let result = 0;
-        let currentOp = '+';
-        let stack = [];
-        let num = 0;
+        const tokens = [];
         let i = 0;
 
-        while (i < tokens.length) {
-            const token = tokens[i];
+        while (i < expr.length) {
+            const char = expr[i];
 
-            if (!isNaN(parseFloat(token))) {
-                num = parseFloat(token);
-            } else if (token === '(') {
-                let depth = 1;
-                let j = i + 1;
-                let subExpr = '';
-                
-                while (j < tokens.length && depth > 0) {
-                    if (tokens[j] === '(') depth++;
-                    if (tokens[j] === ')') depth--;
-                    if (depth > 0) subExpr += tokens[j];
-                    j++;
-                }
-                
-                num = safeEval(subExpr);
-                i = j - 1;
-            } else if (['+', '-', '*', '/', '%', '**'].includes(token)) {
-                if (currentOp === '+') stack.push(num);
-                else if (currentOp === '-') stack.push(-num);
-                else if (currentOp === '*') stack.push(stack.pop() * num);
-                else if (currentOp === '/') {
-                    if (num === 0) return null;
-                    stack.push(stack.pop() / num);
-                }
-                else if (currentOp === '%') stack.push(stack.pop() % num);
-                else if (currentOp === '**') stack.push(Math.pow(stack.pop(), num));
-                
-                currentOp = token;
-                num = 0;
+            if (/\s/.test(char)) {
+                i++;
+                continue;
             }
-            i++;
+
+            if (/[0-9.]/.test(char)) {
+                const number = expr.slice(i).match(/^(?:\d+(?:\.\d*)?|\.\d+)/);
+                if (!number) return null;
+                tokens.push(Number(number[0]));
+                i += number[0].length;
+                continue;
+            }
+
+            if (expr.startsWith('**', i)) {
+                tokens.push('**');
+                i += 2;
+                continue;
+            }
+
+            if ('+-*/%()^'.includes(char)) {
+                tokens.push(char === '^' ? '**' : char);
+                i++;
+                continue;
+            }
+
+            return null;
         }
 
-        if (currentOp === '+') stack.push(num);
-        else if (currentOp === '-') stack.push(-num);
-        else if (currentOp === '*') stack.push(stack.pop() * num);
-        else if (currentOp === '/') {
-            if (num === 0) return null;
-            stack.push(stack.pop() / num);
-        }
-        else if (currentOp === '%') stack.push(stack.pop() % num);
-        else if (currentOp === '**') stack.push(Math.pow(stack.pop(), num));
+        if (tokens.length === 0) return null;
 
-        result = stack.reduce((a, b) => a + b, 0);
+        let position = 0;
+        const peek = () => tokens[position];
+        const take = () => tokens[position++];
+
+        function parseExpression() {
+            let value = parseTerm();
+
+            while (peek() === '+' || peek() === '-') {
+                const operator = take();
+                const right = parseTerm();
+                value = operator === '+' ? value + right : value - right;
+            }
+
+            return value;
+        }
+
+        function parseTerm() {
+            let value = parseUnary();
+
+            while (peek() === '*' || peek() === '/' || peek() === '%') {
+                const operator = take();
+                const right = parseUnary();
+
+                if ((operator === '/' || operator === '%') && right === 0) {
+                    throw new Error('division by zero');
+                }
+
+                if (operator === '*') value *= right;
+                else if (operator === '/') value /= right;
+                else value %= right;
+            }
+
+            return value;
+        }
+
+        function parseUnary() {
+            if (peek() === '+') {
+                take();
+                return parseUnary();
+            }
+
+            if (peek() === '-') {
+                take();
+                return -parseUnary();
+            }
+
+            return parsePower();
+        }
+
+        function parsePower() {
+            const base = parsePrimary();
+
+            if (peek() === '**') {
+                take();
+                return Math.pow(base, parseUnary());
+            }
+
+            return base;
+        }
+
+        function parsePrimary() {
+            const token = take();
+
+            if (typeof token === 'number') return token;
+
+            if (token === '(') {
+                const value = parseExpression();
+                if (take() !== ')') throw new Error('unbalanced parentheses');
+                return value;
+            }
+
+            throw new Error('unexpected token');
+        }
+
+        const result = parseExpression();
+
+        if (position !== tokens.length || !Number.isFinite(result)) return null;
+
         return result;
     } catch {
         return null;

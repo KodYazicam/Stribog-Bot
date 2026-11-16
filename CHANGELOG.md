@@ -43,6 +43,15 @@ All notable changes to this project are documented here. The format follows
 - Overrode `minimatch` to `^11.0.5` for the dev-only `nodemon` dependency,
   clearing the GHSA-g3hv-75wg-m249 advisory.
 
+### Fixed
+
+- `/calc` now evaluates expressions with a small recursive-descent parser instead
+  of the previous operator loop: `^`/`**` exponentiation is right-associative,
+  unary `+`/`-` work after operators, parentheses keep precedence, and division
+  or modulo by zero returns an error instead of a wrong number. Expressions with
+  spaces (`1 + 2`) are accepted again, and malformed input such as `(1+2` is
+  rejected instead of producing a partial result.
+
 ### Security
 
 - Documented the threat model and private vulnerability reporting in `SECURITY.md`.
