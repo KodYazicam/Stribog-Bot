@@ -8,6 +8,8 @@ All notable changes to this project are documented here. The format follows
 
 ### Added
 
+- Turkish quick-start README (`README.tr.md`) with a language switcher in both
+  READMEs and a docs drift test covering the switcher, env keys, and defaults.
 - AutoMod triggers now write structured audit entries to the mod-log channel
   with the rule, target, channel, actions, before/after state, and non-sensitive
   metadata. Message content, matched words, and URLs are never logged, and audit
