@@ -3,7 +3,7 @@
 <div align="center">
 
 ![Discord.js](https://img.shields.io/badge/Discord.js-v14-5865F2?style=for-the-badge&logo=discord&logoColor=white)
-![Node.js](https://img.shields.io/badge/Node.js-18+-339933?style=for-the-badge&logo=nodedotjs&logoColor=white)
+![Node.js](https://img.shields.io/badge/Node.js-22+-339933?style=for-the-badge&logo=nodedotjs&logoColor=white)
 ![SQLite](https://img.shields.io/badge/SQLite-Database-003B57?style=for-the-badge&logo=sqlite&logoColor=white)
 ![License](https://img.shields.io/badge/License-MIT-yellow?style=for-the-badge)
 
@@ -132,7 +132,7 @@ Before you start, make sure you have:
 
 | Requirement | Description | Download Link |
 |-------------|-------------|---------------|
-| **Node.js** | Version 18.0.0 or higher | [nodejs.org](https://nodejs.org/) |
+| **Node.js** | Version 22.0.0 or higher | [nodejs.org](https://nodejs.org/) |
 | **npm** | Comes with Node.js | Included with Node.js |
 | **Discord Account** | To create the bot | [discord.com](https://discord.com/) |
 | **Text Editor** | To edit configuration | [VS Code](https://code.visualstudio.com/) (recommended) |
@@ -185,7 +185,7 @@ Open terminal and run:
 ```bash
 node --version
 ```
-You should see something like `v18.x.x` or higher.
+You should see something like `v22.x.x` or higher.
 
 ```bash
 npm --version

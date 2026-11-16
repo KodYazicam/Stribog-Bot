@@ -36,6 +36,11 @@ All notable changes to this project are documented here. The format follows
 
 ### Changed
 
+- The declared and documented Node.js floor is now 22.0.0, matching the
+  `better-sqlite3@13` requirement and the version CI tests. The previous
+  `engines` value (>=18) advertised an install path that could not build the
+  native database binding. A regression test keeps the manifest, lockfile,
+  CI pin, and both READMEs in sync.
 - `/warnings remove|clear` and confirmed `/config import` actions now write an
   audit entry to the configured mod-log channel with the actor, guild, and
   before/after summaries. Raw configuration values are not logged.
