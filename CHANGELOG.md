@@ -43,6 +43,12 @@ All notable changes to this project are documented here. The format follows
 - Overrode `minimatch` to `^11.0.5` for the dev-only `nodemon` dependency,
   clearing the GHSA-g3hv-75wg-m249 advisory.
 
+### Fixed
+
+- `/reminder set` now inserts the reminder text into `message` and the due time
+  into `remind_at`, so reminders fire on schedule and no longer fail in DMs with
+  a `NOT NULL` constraint error.
+
 ### Security
 
 - Documented the threat model and private vulnerability reporting in `SECURITY.md`.

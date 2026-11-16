@@ -80,9 +80,9 @@ module.exports = {
             insertReminder.run(
                 interaction.user.id,
                 interaction.channel.id,
-                interaction.guild?.id || null,
                 message,
-                endTime
+                endTime,
+                Date.now()
             );
 
             await interaction.reply({
