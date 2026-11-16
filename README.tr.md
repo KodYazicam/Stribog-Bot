@@ -3,7 +3,7 @@
 <div align="center">
 
 ![Discord.js](https://img.shields.io/badge/Discord.js-v14-5865F2?style=for-the-badge&logo=discord&logoColor=white)
-![Node.js](https://img.shields.io/badge/Node.js-18+-339933?style=for-the-badge&logo=nodedotjs&logoColor=white)
+![Node.js](https://img.shields.io/badge/Node.js-22+-339933?style=for-the-badge&logo=nodedotjs&logoColor=white)
 ![SQLite](https://img.shields.io/badge/SQLite-Database-003B57?style=for-the-badge&logo=sqlite&logoColor=white)
 ![License](https://img.shields.io/badge/License-MIT-yellow?style=for-the-badge)
 
@@ -39,7 +39,7 @@
 
 | Gereksinim | Açıklama |
 |------------|----------|
-| **Node.js** | 18.0.0 veya üzeri (LTS sürümü önerilir) |
+| **Node.js** | 22.0.0 veya üzeri (LTS sürümü önerilir) |
 | **npm** | Node.js ile birlikte gelir |
 | **Discord hesabı** | Bot uygulaması oluşturmak için |
 | **Metin düzenleyici** | `.env` dosyasını düzenlemek için |
