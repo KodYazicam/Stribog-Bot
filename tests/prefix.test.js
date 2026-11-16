@@ -2,6 +2,7 @@ const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const { Collection, PermissionFlagsBits } = require('discord.js');
 
+require('./helpers/test-db');
 const database = require('../src/utils/database');
 const interactionCreate = require('../src/events/interactionCreate');
 const { handlePrefixMessage, parsePrefixCommand } = require('../src/utils/prefix');

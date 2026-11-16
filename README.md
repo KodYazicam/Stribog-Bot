@@ -11,6 +11,8 @@
 
 [Features](#-features) • [Installation](#-installation) • [Configuration](#-configuration) • [Commands](#-commands) • [Customization](#-customization) • [Roadmap](./ROADMAP.md) • [Changelog](./CHANGELOG.md)
 
+**Read this README in your language:** [English](./README.md) · [Türkçe](./README.tr.md)
+
 </div>
 
 ---
