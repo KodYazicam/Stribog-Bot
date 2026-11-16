@@ -8,6 +8,14 @@ All notable changes to this project are documented here. The format follows
 
 ### Added
 
+- Docker deployment path: a multi-stage `Dockerfile` that installs production
+  dependencies with build tools and runs as non-root UID 10001, a
+  `docker-compose.yml` with `env_file: .env`, `init: true`, and the named
+  `stribog-data` volume at `/app/data`, and a `.dockerignore` that keeps `.env`,
+  the local database, and `node_modules` out of the build context. CI builds the
+  image on every pull request, and the README documents build, command deploy,
+  upgrade, and volume backup.
+
 - AutoMod triggers now write structured audit entries to the mod-log channel
   with the rule, target, channel, actions, before/after state, and non-sensitive
   metadata. Message content, matched words, and URLs are never logged, and audit
