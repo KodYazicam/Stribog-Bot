@@ -47,6 +47,9 @@ All notable changes to this project are documented here. The format follows
 
 ### Fixed
 
+- Tests now open a private SQLite database per process (`STRIBOG_DB_PATH` plus
+  `tests/helpers/test-db.js`), so parallel `node --test` files no longer fail
+  intermittently with `SQLITE_BUSY` on the shared `data/bot.db`.
 - `/calc` now evaluates expressions with a small recursive-descent parser instead
   of the previous operator loop: `^`/`**` exponentiation is right-associative,
   unary `+`/`-` work after operators, parentheses keep precedence, and division
