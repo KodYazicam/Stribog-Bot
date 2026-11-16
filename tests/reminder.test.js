@@ -1,6 +1,9 @@
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
 
+// Must be required before anything that loads src/utils/database so this file
+// gets its own SQLite database instead of the shared data/bot.db.
+require('./helpers/test-db');
 const database = require('../src/utils/database');
 const reminder = require('../src/commands/utility/reminder');
 

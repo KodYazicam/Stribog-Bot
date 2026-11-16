@@ -2,6 +2,7 @@ const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const { Collection } = require('discord.js');
 
+require('./helpers/test-db');
 const database = require('../src/utils/database');
 const { handleAutoMod } = require('../src/events/messageCreate');
 const { normalizeHostname, matchesWhitelistedHostname } = require('../src/utils/domains');

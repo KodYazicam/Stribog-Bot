@@ -8,6 +8,8 @@ All notable changes to this project are documented here. The format follows
 
 ### Added
 
+- Turkish quick-start README (`README.tr.md`) with a language switcher in both
+  READMEs and a docs drift test covering the switcher, env keys, and defaults.
 - AutoMod triggers now write structured audit entries to the mod-log channel
   with the rule, target, channel, actions, before/after state, and non-sensitive
   metadata. Message content, matched words, and URLs are never logged, and audit
@@ -48,6 +50,15 @@ All notable changes to this project are documented here. The format follows
 - `/reminder set` now inserts the reminder text into `message` and the due time
   into `remind_at`, so reminders fire on schedule and no longer fail in DMs with
   a `NOT NULL` constraint error.
+- Tests now open a private SQLite database per process (`STRIBOG_DB_PATH` plus
+  `tests/helpers/test-db.js`), so parallel `node --test` files no longer fail
+  intermittently with `SQLITE_BUSY` on the shared `data/bot.db`.
+- `/calc` now evaluates expressions with a small recursive-descent parser instead
+  of the previous operator loop: `^`/`**` exponentiation is right-associative,
+  unary `+`/`-` work after operators, parentheses keep precedence, and division
+  or modulo by zero returns an error instead of a wrong number. Expressions with
+  spaces (`1 + 2`) are accepted again, and malformed input such as `(1+2` is
+  rejected instead of producing a partial result.
 
 ### Security
 

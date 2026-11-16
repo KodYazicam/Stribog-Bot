@@ -9,6 +9,7 @@ const warn = require('../src/commands/moderation/warn');
 const warningsCommand = require('../src/commands/moderation/warnings');
 const configCommand = require('../src/commands/admin/config');
 const interactionCreate = require('../src/events/interactionCreate');
+require('./helpers/test-db');
 const database = require('../src/utils/database');
 const { buildGuildConfig, applyGuildConfig } = require('../src/utils/guildConfig');
 
