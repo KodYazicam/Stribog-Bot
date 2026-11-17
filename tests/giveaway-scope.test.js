@@ -72,21 +72,36 @@ function makeClient(messageId) {
     return { client, calls };
 }
 
-function makeInteraction({ guildId, subcommand, messageId }) {
+function makeInteraction({ guildId, subcommand, messageId, prize = null, duration = null, winners = null }) {
     const replies = [];
+    const sent = [];
     return {
         commandName: 'giveaway',
         guild: { id: guildId },
-        channel: { id: unique('invoker-channel') },
+        channel: {
+            id: unique('invoker-channel'),
+            send: async payload => {
+                const message = { id: unique('message'), url: `https://discord.com/channels/1/2/${unique('id')}` };
+                sent.push({ payload, message });
+                return message;
+            }
+        },
         user: { id: unique('user') },
         member: { permissions: { has: () => true } },
         options: {
             getSubcommand: () => subcommand,
-            getString: name => (name === 'message_id' ? messageId : null)
+            getString: name => {
+                if (name === 'message_id') return messageId;
+                if (name === 'prize') return prize;
+                if (name === 'duration') return duration;
+                return null;
+            },
+            getInteger: name => (name === 'winners' ? winners : null)
         },
         replied: false,
         deferred: false,
         replies,
+        sent,
         isChatInputCommand: () => true,
         isAutocomplete: () => false,
         isButton: () => false,
@@ -164,5 +179,142 @@ test('giveaway end still works inside the owning guild', async () => {
         assert.doesNotMatch(descriptionOf(interaction.replies[0]), /not found/i);
     } finally {
         cleanup(messageId);
+    }
+});
+
+test('giveaway start parses the duration and persists the giveaway', async () => {
+    const guildId = unique('guild-a');
+    const interaction = makeInteraction({
+        guildId,
+        subcommand: 'start',
+        prize: 'Nitro',
+        duration: '2h',
+        winners: 3
+    });
+
+    try {
+        await giveawayCommand.execute(interaction, {});
+
+        assert.equal(interaction.sent.length, 1);
+        assert.equal(interaction.replies.length, 1);
+        assert.match(descriptionOf(interaction.replies[0]), /Giveaway started/i);
+
+        const row = database.db.prepare('SELECT * FROM giveaways WHERE guild_id = ?').get(guildId);
+        assert.ok(row, 'the start subcommand should insert a giveaway row');
+        assert.equal(row.prize, 'Nitro');
+        assert.equal(row.winners, 3);
+        cleanup(row.message_id);
+    } finally {
+        database.db.prepare('DELETE FROM giveaways WHERE guild_id = ?').run(guildId);
+    }
+});
+
+test('giveaway start rejects an invalid duration without inserting a row', async () => {
+    const guildId = unique('guild-a');
+    const interaction = makeInteraction({
+        guildId,
+        subcommand: 'start',
+        prize: 'Nitro',
+        duration: '2hours'
+    });
+
+    await giveawayCommand.execute(interaction, {});
+
+    assert.equal(interaction.sent.length, 0);
+    assert.equal(interaction.replies.length, 1);
+    assert.match(descriptionOf(interaction.replies[0]), /Invalid duration/i);
+    assert.equal(
+        database.db.prepare('SELECT COUNT(*) AS count FROM giveaways WHERE guild_id = ?').get(guildId).count,
+        0
+    );
+});
+
+test('giveaway end announces the winners when entries exist', async () => {
+    const guildId = unique('guild-a');
+    const { row, messageId } = makeGiveaway({ guildId });
+    database.addGiveawayEntry.run(row.id, unique('entry-user'), Date.now());
+    const { client, calls } = makeClient(messageId);
+    const interaction = makeInteraction({ guildId, subcommand: 'end', messageId });
+
+    try {
+        await giveawayCommand.execute(interaction, client);
+
+        assert.equal(database.getGiveaway.get(messageId).ended, 1);
+        assert.equal(calls.edits.length, 1);
+        assert.equal(calls.sends.length, 1);
+        assert.match(calls.sends[0].content, /Congratulations/i);
+    } finally {
+        cleanup(messageId);
+    }
+});
+
+test('giveaway reroll picks a new winner from the recorded entries', async () => {
+    const guildId = unique('guild-a');
+    const { row, messageId } = makeGiveaway({ guildId, ended: true });
+    database.addGiveawayEntry.run(row.id, unique('entry-user'), Date.now());
+    const { client, calls } = makeClient(messageId);
+    const interaction = makeInteraction({ guildId, subcommand: 'reroll', messageId });
+
+    try {
+        await giveawayCommand.execute(interaction, client);
+
+        assert.equal(calls.sends.length, 1);
+        assert.match(calls.sends[0].content, /Congratulations/i);
+        assert.equal(interaction.replies.length, 1);
+        assert.match(descriptionOf(interaction.replies[0]), /Rerolled/i);
+    } finally {
+        cleanup(messageId);
+    }
+});
+
+test('giveaway end reports an already ended giveaway and reroll reports a running one', async () => {
+    const guildId = unique('guild-a');
+    const ended = makeGiveaway({ guildId, ended: true });
+    const running = makeGiveaway({ guildId });
+
+    try {
+        const endInteraction = makeInteraction({ guildId, subcommand: 'end', messageId: ended.messageId });
+        await giveawayCommand.execute(endInteraction, {});
+        assert.match(descriptionOf(endInteraction.replies[0]), /already ended/i);
+
+        const rerollInteraction = makeInteraction({ guildId, subcommand: 'reroll', messageId: running.messageId });
+        await giveawayCommand.execute(rerollInteraction, {});
+        assert.match(descriptionOf(rerollInteraction.replies[0]), /not ended yet/i);
+    } finally {
+        cleanup(ended.messageId);
+        cleanup(running.messageId);
+    }
+});
+
+test('giveaway end and reroll stop quietly when the channel or message is gone', async () => {
+    const guildId = unique('guild-a');
+    const ending = makeGiveaway({ guildId });
+    const rerolling = makeGiveaway({ guildId, ended: true });
+    const missingChannel = { channels: { fetch: async () => { throw new Error('missing channel'); } } };
+    const missingMessage = {
+        channels: {
+            fetch: async () => ({ messages: { fetch: async () => { throw new Error('missing message'); } } })
+        }
+    };
+
+    try {
+        const endInteraction = makeInteraction({ guildId, subcommand: 'end', messageId: ending.messageId });
+        await giveawayCommand.execute(endInteraction, missingChannel);
+        assert.equal(database.getGiveaway.get(ending.messageId).ended, 0, 'a missing channel must not end the row');
+
+        const endMissingMessage = makeInteraction({ guildId, subcommand: 'end', messageId: ending.messageId });
+        await giveawayCommand.execute(endMissingMessage, missingMessage);
+        assert.equal(database.getGiveaway.get(ending.messageId).ended, 0, 'a missing message must not end the row');
+
+        const rerollMissingChannel = makeInteraction({ guildId, subcommand: 'reroll', messageId: rerolling.messageId });
+        await giveawayCommand.execute(rerollMissingChannel, missingChannel);
+        assert.equal(rerollMissingChannel.replies.length, 0);
+
+        const rerollMissingMessage = makeInteraction({ guildId, subcommand: 'reroll', messageId: rerolling.messageId });
+        await giveawayCommand.execute(rerollMissingMessage, missingMessage);
+        assert.equal(rerollMissingMessage.replies.length, 0);
+    } finally {
+        cleanup(ending.messageId);
+        cleanup(rerolling.messageId);
     }
 });
