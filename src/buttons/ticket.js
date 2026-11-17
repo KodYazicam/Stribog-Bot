@@ -130,18 +130,6 @@ module.exports = {
         } else if (action === 'close' || interaction.customId === 'ticket_close') {
             const ticket = getTicket.get(interaction.channel.id);
             const guildData = getGuild.get(interaction.guild.id);
-            const isStaff = interaction.member.permissions.has(PermissionsBitField.Flags.ManageChannels)
-                || (guildData?.support_role && interaction.member.roles.cache.has(guildData.support_role));
-            if (ticket && ticket.user_id !== interaction.user.id && !isStaff) {
-                return interaction.reply({
-                    embeds: [
-                        new EmbedBuilder()
-                            .setColor(colors.danger)
-                            .setDescription('Only the ticket owner or staff can close this ticket.')
-                    ],
-                    ephemeral: true
-                });
-            }
 
             if (!ticket) {
                 return interaction.reply({
@@ -149,6 +137,17 @@ module.exports = {
                         new EmbedBuilder()
                             .setColor(colors.danger)
                             .setDescription('This is not a ticket channel.')
+                    ],
+                    ephemeral: true
+                });
+            }
+
+            if (!canManageTicket(ticket, interaction.member, guildData)) {
+                return interaction.reply({
+                    embeds: [
+                        new EmbedBuilder()
+                            .setColor(colors.danger)
+                            .setDescription('Only the ticket owner or staff can close this ticket.')
                     ],
                     ephemeral: true
                 });
@@ -176,6 +175,28 @@ module.exports = {
         } else if (action === 'confirm' || interaction.customId === 'ticket_confirm_close') {
             const ticket = getTicket.get(interaction.channel.id);
             const guildData = getGuild.get(interaction.guild.id);
+
+            if (!ticket) {
+                return interaction.reply({
+                    embeds: [
+                        new EmbedBuilder()
+                            .setColor(colors.danger)
+                            .setDescription('This is not a ticket channel.')
+                    ],
+                    ephemeral: true
+                });
+            }
+
+            if (!canManageTicket(ticket, interaction.member, guildData)) {
+                return interaction.reply({
+                    embeds: [
+                        new EmbedBuilder()
+                            .setColor(colors.danger)
+                            .setDescription('Only the ticket owner or staff can close this ticket.')
+                    ],
+                    ephemeral: true
+                });
+            }
 
             closeTicket.run(interaction.channel.id);
 
@@ -230,6 +251,7 @@ module.exports = {
 
         } else if (action === 'claim' || interaction.customId === 'ticket_claim') {
             const ticket = getTicket.get(interaction.channel.id);
+            const guildData = getGuild.get(interaction.guild.id);
 
             if (!ticket) {
                 return interaction.reply({
@@ -237,6 +259,17 @@ module.exports = {
                         new EmbedBuilder()
                             .setColor(colors.danger)
                             .setDescription('This is not a ticket channel.')
+                    ],
+                    ephemeral: true
+                });
+            }
+
+            if (!canManageTicket(ticket, interaction.member, guildData)) {
+                return interaction.reply({
+                    embeds: [
+                        new EmbedBuilder()
+                            .setColor(colors.danger)
+                            .setDescription('Only the ticket owner or staff can claim this ticket.')
                     ],
                     ephemeral: true
                 });
@@ -252,6 +285,22 @@ module.exports = {
         }
     }
 };
+
+function isTicketStaff(member, guildData) {
+    if (!member) return false;
+    if (member.permissions?.has(PermissionsBitField.Flags.ManageChannels)) return true;
+    return Boolean(guildData?.support_role && member.roles?.cache?.has(guildData.support_role));
+}
+
+/**
+ * The owner and staff may close or claim a ticket. The confirmation step and
+ * the claim button must repeat this check: the confirmation prompt is a normal
+ * channel message, so every participant in the ticket can see its button.
+ */
+function canManageTicket(ticket, member, guildData) {
+    if (!ticket || !member) return false;
+    return member.id === ticket.user_id || isTicketStaff(member, guildData);
+}
 
 function formatDuration(ms) {
     const seconds = Math.floor(ms / 1000);

@@ -64,6 +64,13 @@ All notable changes to this project are documented here. The format follows
 
 ### Fixed
 
+- Ticket buttons now re-check the owner/staff rule at every step. The
+  confirmation button (`ticket_confirm_close`) previously deleted the channel
+  for any participant, and `ticket_claim` accepted any member; both now reuse
+  the same owner / `ManageChannels` / support-role predicate as the first close
+  step. A stale confirmation button on a non-ticket channel now replies instead
+  of scheduling a deletion, and `tests/ticket-buttons.test.js` covers the denial,
+  owner, support-role, stale-button, create, close, and cancel paths.
 - `/reminder set` now inserts the reminder text into `message` and the due time
   into `remind_at`, so reminders fire on schedule and no longer fail in DMs with
   a `NOT NULL` constraint error.
