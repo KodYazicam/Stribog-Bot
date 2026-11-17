@@ -8,6 +8,13 @@ All notable changes to this project are documented here. The format follows
 
 ### Added
 
+- CI production dependency audit: the `test` job runs
+  `npm audit --omit=dev --audit-level=high` after `npm ci`, so a high-severity
+  advisory in a runtime dependency fails the pull request instead of waiting for
+  a post-merge Dependabot alert. Dev-only advisories are ignored, matching the
+  `LogYazicam` gate, and `tests/dependency-audit.test.js` fails if the step, its
+  flags, or its position in the required `test` job drift.
+
 - CI coverage floor: `npm run test:coverage` collects coverage across `src/**`
   and fails below 74% lines, 71% branches, or 78% functions. The `test` job runs
   it on every push and pull request, and `tests/coverage-gate.test.js` fails if
