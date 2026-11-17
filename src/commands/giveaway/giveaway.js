@@ -2,6 +2,16 @@ const { SlashCommandBuilder, EmbedBuilder, PermissionFlagsBits, ActionRowBuilder
 const { colors } = require('../../config/config');
 const { insertGiveaway, getGiveaway, getGiveawayEntries, endGiveaway } = require('../../utils/database');
 
+// Message IDs are global snowflakes, so a lookup by ID alone can resolve to a
+// row owned by another guild. Treat a foreign row exactly like a missing one:
+// the caller learns nothing and no cross-guild state is touched.
+function getOwnedGiveaway(interaction, messageId) {
+    const giveaway = getGiveaway.get(messageId);
+    if (!giveaway) return null;
+    if (!interaction.guild || String(giveaway.guild_id) !== String(interaction.guild.id)) return null;
+    return giveaway;
+}
+
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('giveaway')
@@ -105,7 +115,7 @@ module.exports = {
 
         } else if (subcommand === 'end') {
             const messageId = interaction.options.getString('message_id');
-            const giveaway = getGiveaway.get(messageId);
+            const giveaway = getOwnedGiveaway(interaction, messageId);
 
             if (!giveaway) {
                 return interaction.reply({
@@ -142,7 +152,7 @@ module.exports = {
 
         } else if (subcommand === 'reroll') {
             const messageId = interaction.options.getString('message_id');
-            const giveaway = getGiveaway.get(messageId);
+            const giveaway = getOwnedGiveaway(interaction, messageId);
 
             if (!giveaway) {
                 return interaction.reply({

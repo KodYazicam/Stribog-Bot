@@ -64,6 +64,11 @@ All notable changes to this project are documented here. The format follows
 
 ### Fixed
 
+- `/giveaway end` and `/giveaway reroll` now resolve the giveaway only when
+  `giveaways.guild_id` matches the guild where the command was used, so a
+  manager in one server can no longer end or reroll a giveaway hosted in
+  another server where the bot is also present. Foreign rows answer with the
+  same not-found response as a missing ID and are left untouched.
 - `/reminder set` now inserts the reminder text into `message` and the due time
   into `remind_at`, so reminders fire on schedule and no longer fail in DMs with
   a `NOT NULL` constraint error.
