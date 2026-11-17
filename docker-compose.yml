@@ -1,0 +1,19 @@
+services:
+  bot:
+    build: .
+    image: stribog-bot:local
+    # tini as PID 1: the bot runs no shutdown hooks of its own, but init still
+    # reaps children and forwards SIGTERM cleanly.
+    init: true
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    env_file: .env
+    environment:
+      NODE_ENV: production
+    volumes:
+      - stribog-data:/app/data
+
+volumes:
+  stribog-data:
+    name: stribog-data

@@ -29,6 +29,7 @@
    - [Step 5: Install Dependencies](#step-5-install-dependencies)
    - [Step 6: Deploy Commands](#step-6-deploy-commands)
    - [Step 7: Run the Bot](#step-7-run-the-bot)
+   - [Docker (optional)](#-docker)
 4. [Command Reference](#-commands)
 5. [Configuration Guide](#-configuration)
 6. [Customization & Code Editing](#-customization)
@@ -340,6 +341,71 @@ If everything is correct, you should see:
 ```
 
 **The bot is now online!** 🎉
+
+---
+
+## 🐳 Docker
+
+Docker is optional. It provides a persistent SQLite volume and a restart policy
+without installing Node.js on the host.
+
+### 1. Configure
+
+```bash
+cp .env.example .env
+# edit .env: TOKEN, CLIENT_ID, GUILD_ID, OWNER_ID, PREFIX
+```
+
+The token is read from the environment at runtime. `.env` is listed in
+`.dockerignore`, so it is never copied into the image.
+
+### 2. Build and start
+
+```bash
+docker compose up -d --build
+docker compose logs -f
+```
+
+Register the slash commands once (and after changing them):
+
+```bash
+docker compose run --rm bot node src/deploy-commands.js
+```
+
+### 3. Data and backups
+
+The SQLite database lives in the named volume `stribog-data`, mounted at
+`/app/data` (`bot.db` plus its WAL files). It survives `docker compose down`
+followed by `docker compose up`. Only `docker compose down -v` deletes it.
+
+Back up the volume while the bot is stopped:
+
+```bash
+docker compose stop
+docker run --rm -v stribog-data:/data -v "$PWD":/backup busybox \
+  tar czf /backup/stribog-data.tgz -C / data
+docker compose start
+```
+
+### 4. Upgrade
+
+```bash
+git pull
+docker compose up -d --build
+docker compose run --rm bot node src/deploy-commands.js   # only if commands changed
+```
+
+### Notes
+
+- The container runs as UID 10001 (non-root); the runtime stage ships no
+  compilers and only production dependencies.
+- The bot publishes no port: Discord traffic is outbound, so compose maps no
+  host port.
+- There is no HTTP surface to probe, so the image declares no `HEALTHCHECK`.
+  The process staying up is the signal, and `restart: unless-stopped` brings it
+  back after a crash.
+- On ARM64 hosts `better-sqlite3` is compiled from source in the build stage,
+  so the first build takes a few minutes.
 
 ---
 

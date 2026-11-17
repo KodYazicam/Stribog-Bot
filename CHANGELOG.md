@@ -8,6 +8,13 @@ All notable changes to this project are documented here. The format follows
 
 ### Added
 
+- Docker deployment path: a multi-stage `Dockerfile` that installs production
+  dependencies with build tools and runs as non-root UID 10001, a
+  `docker-compose.yml` with `env_file: .env`, `init: true`, and the named
+  `stribog-data` volume at `/app/data`, and a `.dockerignore` that keeps `.env`,
+  the local database, and `node_modules` out of the build context. CI builds the
+  image on every pull request, and the README documents build, command deploy,
+  upgrade, and volume backup.
 - Turkish quick-start README (`README.tr.md`) with a language switcher in both
   READMEs and a docs drift test covering the switcher, env keys, and defaults.
 - AutoMod triggers now write structured audit entries to the mod-log channel
