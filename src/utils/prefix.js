@@ -342,6 +342,23 @@ function hasDefaultPermissions(command, member) {
     return Boolean(member.permissions?.has(required));
 }
 
+/**
+ * Text a prefix command leaves for moderation: the leading `<prefix><command>`
+ * token is removed so the command name itself cannot trip a filter, while the
+ * arguments that follow it are still scanned. Unprefixed content is returned
+ * untouched, and a bare invocation returns an empty string.
+ */
+function stripPrefixInvocation(content, prefix = defaultPrefix) {
+    if (typeof content !== 'string') return '';
+    if (!prefix || !content.startsWith(prefix)) return content;
+
+    const rest = content.slice(prefix.length).trimStart();
+    const match = rest.match(/^\S+/);
+    if (!match) return '';
+
+    return rest.slice(match[0].length).trim();
+}
+
 async function handlePrefixMessage(message, client, { prefix = defaultPrefix } = {}) {
     if (!prefix || message.author?.bot || !message.guild || !message.member) return false;
     if (!message.content?.startsWith(prefix)) return false;
@@ -375,6 +392,7 @@ async function handlePrefixMessage(message, client, { prefix = defaultPrefix } =
 module.exports = {
     PREFIX_CATEGORIES,
     handlePrefixMessage,
+    stripPrefixInvocation,
     parsePrefixCommand,
     createPrefixInteraction,
     buildUsage,

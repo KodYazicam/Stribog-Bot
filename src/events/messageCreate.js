@@ -2,7 +2,7 @@ const { Events, EmbedBuilder } = require('discord.js');
 const { colors } = require('../config/config');
 const { getUserGuildData, updateUserXP, updateUserLevel, getGuild, insertGuild } = require('../utils/database');
 const { xpRequiredForLevel, randomXpGain, xpCooldown } = require('../utils/leveling');
-const { handlePrefixMessage } = require('../utils/prefix');
+const { handlePrefixMessage, stripPrefixInvocation } = require('../utils/prefix');
 const { logAutoModAction } = require('../utils/automodAudit');
 const { matchesWhitelistedHostname } = require('../utils/domains');
 
@@ -16,19 +16,29 @@ module.exports = {
 
         insertGuild.run(message.guild.id);
 
+        // A prefix command used to return early and skip AutoMod entirely, so
+        // `!8ball <link>` bypassed every rule. Run the command first (it still
+        // replies), then moderate the arguments that follow the invocation.
+        let commandHandled = false;
         try {
-            if (await handlePrefixMessage(message, client)) return;
+            commandHandled = Boolean(await handlePrefixMessage(message, client));
         } catch (error) {
             console.error('Prefix command error:', error);
         }
 
-        try {
-            await handleLeveling(message, client);
-        } catch (error) {
-            console.error('Leveling error:', error);
+        if (!commandHandled) {
+            try {
+                await handleLeveling(message, client);
+            } catch (error) {
+                console.error('Leveling error:', error);
+            }
         }
         try {
-            await handleAutoMod(message, client);
+            await handleAutoMod(
+                message,
+                client,
+                commandHandled ? { content: stripPrefixInvocation(message.content) } : {}
+            );
         } catch (error) {
             console.error('AutoMod error:', error);
         }
@@ -179,16 +189,21 @@ async function writeAutoModAudit(message, details) {
     }
 }
 
-async function handleAutoMod(message, client) {
+async function handleAutoMod(message, client, { content } = {}) {
     const guildData = getGuild.get(message.guild.id);
     if (!guildData) return;
 
     if (!message.member) return;
     if (message.member.permissions.has('ManageMessages')) return;
 
+    // Defaults to the full message. The messageCreate caller overrides it with
+    // the text left after a prefix invocation so command arguments are still
+    // scanned while the command name itself cannot trip a filter.
+    const text = typeof content === 'string' ? content : (message.content ?? '');
+
     if (guildData.automod_antilink === 1) {
         const urlRegex = /(https?:\/\/[^\s]+)/gi;
-        const urls = message.content.match(urlRegex) || [];
+        const urls = text.match(urlRegex) || [];
 
         if (urls.length > 0) {
             let whitelistedDomains = [];
@@ -295,9 +310,9 @@ async function handleAutoMod(message, client) {
     if (guildData.automod_badwords === 1 && guildData.automod_wordlist) {
         try {
             const badWords = JSON.parse(guildData.automod_wordlist);
-            const content = message.content.toLowerCase();
+            const lowered = text.toLowerCase();
             const matched = Array.isArray(badWords)
-                && badWords.some(word => content.includes(String(word).toLowerCase()));
+                && badWords.some(word => lowered.includes(String(word).toLowerCase()));
 
             if (matched) {
                 const deleted = await safeDelete(message);
@@ -321,9 +336,9 @@ async function handleAutoMod(message, client) {
     }
 
     if (guildData.automod_caps === 1) {
-        if (message.content.length > 10) {
-            const upperCase = message.content.replace(/[^A-Z]/g, '').length;
-            const totalLetters = message.content.replace(/[^a-zA-Z]/g, '').length;
+        if (text.length > 10) {
+            const upperCase = text.replace(/[^A-Z]/g, '').length;
+            const totalLetters = text.replace(/[^a-zA-Z]/g, '').length;
 
             if (totalLetters > 0 && (upperCase / totalLetters) > 0.7) {
                 const ratio = Math.round((upperCase / totalLetters) * 100);

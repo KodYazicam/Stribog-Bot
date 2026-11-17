@@ -71,6 +71,13 @@ All notable changes to this project are documented here. The format follows
 
 ### Fixed
 
+- AutoMod now inspects the arguments of a prefix command. `messageCreate`
+  returned as soon as `handlePrefixMessage` consumed the message, so
+  `!8ball https://example.test` skipped the anti-link, bad-words, caps, and
+  mass-mention rules entirely. The command still runs and replies first, then
+  the invocation token is stripped and the remaining text goes through the same
+  rules; the command name alone never matches a filter. Covered by
+  `tests/automod-prefix-bypass.test.js`.
 - Ticket buttons now re-check the owner/staff rule at every step. The
   confirmation button (`ticket_confirm_close`) previously deleted the channel
   for any participant, and `ticket_claim` accepted any member; both now reuse
