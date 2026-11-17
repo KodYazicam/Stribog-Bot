@@ -16,6 +16,8 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm test
+      - name: Coverage floor
+        run: npm run test:coverage
 
   docker:
     runs-on: ubuntu-latest

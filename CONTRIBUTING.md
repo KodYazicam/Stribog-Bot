@@ -9,6 +9,13 @@ npm test
 name, subcommand, option, or default permission, run `npm run docs:check` and
 update the matching README row.
 
+`npm run test:coverage` runs the same suite with `node --test
+--experimental-test-coverage` and fails when `src/**` drops below 74% lines, 71%
+branches, or 78% functions. CI runs it in the `test` job, so a pull request that
+deletes tests or leaves a new branch untested goes red. Add the missing test
+instead of lowering a threshold, and raise the floor when coverage improves;
+`tests/coverage-gate.test.js` fails if the gate is removed or weakened.
+
 `node --test` runs each test file in its own process. Any test that loads
 `src/utils/database` must first `require('./helpers/test-db')`; the helper points
 `STRIBOG_DB_PATH` at a private temp file and removes it on exit, so parallel
