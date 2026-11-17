@@ -59,6 +59,9 @@ All notable changes to this project are documented here. The format follows
 
 ### Fixed
 
+- `/reminder set` now inserts the reminder text into `message` and the due time
+  into `remind_at`, so reminders fire on schedule and no longer fail in DMs with
+  a `NOT NULL` constraint error.
 - Tests now open a private SQLite database per process (`STRIBOG_DB_PATH` plus
   `tests/helpers/test-db.js`), so parallel `node --test` files no longer fail
   intermittently with `SQLITE_BUSY` on the shared `data/bot.db`.
