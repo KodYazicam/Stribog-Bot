@@ -647,6 +647,18 @@ leveling: {
 
 ## 🎨 Customization
 
+### How to Run the Tests
+
+```bash
+npm test              # unit tests + README command reference
+npm run test:coverage # same suite with the src/** coverage floor
+```
+
+CI runs both in the `test` job. The coverage run fails when `src/**` drops below
+74% lines, 71% branches, or 78% functions, so new branches need a test before the
+pull request turns green. Raise the floor when coverage improves rather than
+lowering it; `tests/coverage-gate.test.js` guards the wiring.
+
 ### How to Add a New Command
 
 1. **Choose a category** - Look in `src/commands/` for existing categories

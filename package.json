@@ -8,6 +8,7 @@
     "deploy": "node src/deploy-commands.js",
     "dev": "nodemon src/index.js",
     "test": "node --test && node scripts/check-command-docs.js",
+    "test:coverage": "node --test --experimental-test-coverage --test-coverage-include=\"src/**\" --test-coverage-lines=74 --test-coverage-branches=71 --test-coverage-functions=78",
     "commands:list": "node scripts/command-reference.js",
     "docs:check": "node scripts/check-command-docs.js"
   },

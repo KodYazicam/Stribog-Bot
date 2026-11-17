@@ -8,6 +8,11 @@ All notable changes to this project are documented here. The format follows
 
 ### Added
 
+- CI coverage floor: `npm run test:coverage` collects coverage across `src/**`
+  and fails below 74% lines, 71% branches, or 78% functions. The `test` job runs
+  it on every push and pull request, and `tests/coverage-gate.test.js` fails if
+  the script, its include, a threshold, or the CI step is removed.
+
 - Docker deployment path: a multi-stage `Dockerfile` that installs production
   dependencies with build tools and runs as non-root UID 10001, a
   `docker-compose.yml` with `env_file: .env`, `init: true`, and the named
