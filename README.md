@@ -512,8 +512,8 @@ Administrator at runtime.
 | Command | Permission | Description | Example |
 |---------|------------|-------------|---------|
 | `/giveaway start` | Manage Guild | Start a giveaway | `/giveaway start prize:Nitro duration:1h winners:1` |
-| `/giveaway end` | Manage Guild | End a giveaway early | `/giveaway end message_id:123456789012345678` |
-| `/giveaway reroll` | Manage Guild | Reroll giveaway winners | `/giveaway reroll message_id:123456789012345678` |
+| `/giveaway end` | Manage Guild | End a giveaway in this server early | `/giveaway end message_id:123456789012345678` |
+| `/giveaway reroll` | Manage Guild | Reroll winners for a giveaway in this server | `/giveaway reroll message_id:123456789012345678` |
 
 ### Ticket Commands
 

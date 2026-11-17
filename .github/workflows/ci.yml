@@ -15,6 +15,8 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      - name: Production dependency audit
+        run: npm audit --omit=dev --audit-level=high
       - run: npm test
       - name: Coverage floor
         run: npm run test:coverage

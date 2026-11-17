@@ -8,6 +8,13 @@ All notable changes to this project are documented here. The format follows
 
 ### Added
 
+- CI production dependency audit: the `test` job runs
+  `npm audit --omit=dev --audit-level=high` after `npm ci`, so a high-severity
+  advisory in a runtime dependency fails the pull request instead of waiting for
+  a post-merge Dependabot alert. Dev-only advisories are ignored, matching the
+  `LogYazicam` gate, and `tests/dependency-audit.test.js` fails if the step, its
+  flags, or its position in the required `test` job drift.
+
 - CI coverage floor: `npm run test:coverage` collects coverage across `src/**`
   and fails below 74% lines, 71% branches, or 78% functions. The `test` job runs
   it on every push and pull request, and `tests/coverage-gate.test.js` fails if
@@ -64,6 +71,18 @@ All notable changes to this project are documented here. The format follows
 
 ### Fixed
 
+- Ticket buttons now re-check the owner/staff rule at every step. The
+  confirmation button (`ticket_confirm_close`) previously deleted the channel
+  for any participant, and `ticket_claim` accepted any member; both now reuse
+  the same owner / `ManageChannels` / support-role predicate as the first close
+  step. A stale confirmation button on a non-ticket channel now replies instead
+  of scheduling a deletion, and `tests/ticket-buttons.test.js` covers the denial,
+  owner, support-role, stale-button, create, close, and cancel paths.
+- `/giveaway end` and `/giveaway reroll` now resolve the giveaway only when
+  `giveaways.guild_id` matches the guild where the command was used, so a
+  manager in one server can no longer end or reroll a giveaway hosted in
+  another server where the bot is also present. Foreign rows answer with the
+  same not-found response as a missing ID and are left untouched.
 - `/trivia` rewards now credit the guild economy (`guild_economy`) instead of the
   retired `users` balance, so a correct answer appears in `/balance`, the economy
   leaderboard, and the shop. The credit is an atomic increment.
