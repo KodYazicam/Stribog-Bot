@@ -55,13 +55,10 @@ module.exports = {
             });
 
             try {
-                const { updateUserCoins, insertUser, getUserGuildData, insertUserGuildData } = require('../utils/database');
-                insertUser.run(interaction.user.id);
-                let userData = getUserGuildData.get(interaction.user.id, interaction.guild.id);
-                if (!userData) {
-                    insertUserGuildData.run(interaction.user.id, interaction.guild.id);
+                const { addEconomyCoins } = require('../utils/database');
+                if (interaction.guild) {
+                    addEconomyCoins(interaction.user.id, interaction.guild.id, points);
                 }
-                updateUserCoins.run(points, interaction.user.id);
             } catch {}
 
         } else {

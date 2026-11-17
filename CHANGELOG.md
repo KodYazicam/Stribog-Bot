@@ -64,6 +64,9 @@ All notable changes to this project are documented here. The format follows
 
 ### Fixed
 
+- `/trivia` rewards now credit the guild economy (`guild_economy`) instead of the
+  retired `users` balance, so a correct answer appears in `/balance`, the economy
+  leaderboard, and the shop. The credit is an atomic increment.
 - `/reminder set` now inserts the reminder text into `message` and the due time
   into `remind_at`, so reminders fire on schedule and no longer fail in DMs with
   a `NOT NULL` constraint error.
