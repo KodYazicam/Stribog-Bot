@@ -172,6 +172,7 @@ const updateEconomyBalance = db.prepare('UPDATE guild_economy SET balance = ? WH
 const updateEconomyBank = db.prepare('UPDATE guild_economy SET bank = ? WHERE user_id = ? AND guild_id = ?');
 const updateEconomyDaily = db.prepare('UPDATE guild_economy SET daily_claimed = ? WHERE user_id = ? AND guild_id = ?');
 const updateEconomyWork = db.prepare('UPDATE guild_economy SET work_cooldown = ? WHERE user_id = ? AND guild_id = ?');
+const incrementEconomyBalance = db.prepare('UPDATE guild_economy SET balance = balance + ? WHERE user_id = ? AND guild_id = ?');
 
 const ensureEconomy = (userId, guildId) => {
     insertEconomy.run(userId, guildId);
@@ -187,6 +188,17 @@ const transferCoins = db.transaction((fromId, toId, guildId, amount) => {
     const to = getEconomy.get(toId, guildId);
     updateEconomyBalance.run(to.balance + amount, toId, guildId);
     return true;
+});
+
+// Atomic credit for rewards. A read-modify-write here would lose updates when
+// two rewards land together, so the balance moves inside a single statement.
+const addEconomyCoins = db.transaction((userId, guildId, amount) => {
+    if (!Number.isInteger(amount) || amount <= 0) {
+        throw new RangeError('amount must be a positive integer');
+    }
+    ensureEconomy(userId, guildId);
+    incrementEconomyBalance.run(amount, userId, guildId);
+    return getEconomy.get(userId, guildId);
 });
 
 const getGuild = db.prepare('SELECT * FROM guilds WHERE id = ?');
@@ -275,6 +287,7 @@ module.exports = {
     getEconomy,
     insertEconomy,
     ensureEconomy,
+    addEconomyCoins,
     updateEconomyBalance,
     updateEconomyBank,
     updateEconomyDaily,
