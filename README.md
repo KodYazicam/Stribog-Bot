@@ -280,7 +280,10 @@ Economy is **per guild**. `/give` is a SQLite transaction. Tickets need a **supp
 Commands in the economy, fun, info, leveling, admin, and giveaway groups work
 with both slash and the configured prefix (default `!`). Prefix and slash share
 the same handler, permissions, and cooldown. Admin and giveaway commands keep
-their Discord default permission requirements on the prefix path too. Examples:
+their Discord default permission requirements on the prefix path too. As on
+Discord, `Administrator` satisfies every requirement, and a command locked with
+`default_member_permissions: 0` stays administrator-only on the prefix path.
+Examples:
 `!balance @user`, `!8ball "Will it work?"`, `!rank`, `!automod status`,
 `!giveaway start "Nitro" 1h 2`. Moderation, ticket, and utility commands remain
 slash-only for now.
