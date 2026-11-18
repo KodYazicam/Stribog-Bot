@@ -1,6 +1,6 @@
 const { SlashCommandBuilder, EmbedBuilder, PermissionFlagsBits, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const { colors } = require('../../config/config');
-const { getShopItems, getShopItem, insertShopItem, deleteShopItem, ensureEconomy, updateEconomyBalance } = require('../../utils/database');
+const { getShopItems, getShopItem, insertShopItem, deleteShopItem, ensureEconomy, updateEconomyBalance, addEconomyCoins } = require('../../utils/database');
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -114,14 +114,56 @@ module.exports = {
                 });
             }
 
+            // Resolve the reward role before charging so a missing or
+            // unassignable role cannot take coins without granting anything.
+            let role = null;
+            if (item.role_id) {
+                role = await interaction.guild.roles.fetch(item.role_id).catch(() => null);
+
+                if (!role || role.managed) {
+                    return interaction.reply({
+                        embeds: [
+                            new EmbedBuilder()
+                                .setColor(colors.danger)
+                                .setDescription('This item could not be delivered because its reward role is unavailable or managed by an integration. You have not been charged.')
+                        ],
+                        ephemeral: true
+                    });
+                }
+
+                const botMember = interaction.guild.members.me;
+                if (botMember && role.position >= botMember.roles.highest.position) {
+                    return interaction.reply({
+                        embeds: [
+                            new EmbedBuilder()
+                                .setColor(colors.danger)
+                                .setDescription('This item could not be delivered because the reward role is higher than the bot\'s role. You have not been charged.')
+                        ],
+                        ephemeral: true
+                    });
+                }
+            }
+
             updateEconomyBalance.run(user.balance - item.price, interaction.user.id, interaction.guild.id);
 
             let rewardMessage = '';
-            if (item.role_id) {
-                const role = await interaction.guild.roles.fetch(item.role_id).catch(() => null);
-                if (role) {
-                    await interaction.member.roles.add(role).catch(() => {});
+            if (role) {
+                try {
+                    await interaction.member.roles.add(role);
                     rewardMessage = `\nYou received the ${role} role!`;
+                } catch {
+                    // Discord rejected the grant after the charge: compensate
+                    // atomically so the buyer keeps their coins.
+                    addEconomyCoins(interaction.user.id, interaction.guild.id, item.price);
+
+                    return interaction.reply({
+                        embeds: [
+                            new EmbedBuilder()
+                                .setColor(colors.danger)
+                                .setDescription(`The ${role} role could not be granted, so your **${item.price.toLocaleString()}** coins have been refunded. Please contact a server admin.`)
+                        ],
+                        ephemeral: true
+                    });
                 }
             }
 

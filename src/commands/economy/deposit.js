@@ -1,6 +1,6 @@
 const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
 const { colors } = require('../../config/config');
-const { ensureEconomy, updateEconomyBalance, updateEconomyBank } = require('../../utils/database');
+const { ensureEconomy, depositToBank } = require('../../utils/database');
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -38,6 +38,17 @@ module.exports = {
             }
         }
 
+        if (amount <= 0) {
+            return interaction.reply({
+                embeds: [
+                    new EmbedBuilder()
+                        .setColor(colors.danger)
+                        .setDescription('Please enter a valid amount.')
+                ],
+                ephemeral: true
+            });
+        }
+
         if (amount > userData.balance) {
             return interaction.reply({
                 embeds: [
@@ -49,11 +60,23 @@ module.exports = {
             });
         }
 
-        const newBalance = userData.balance - amount;
-        const newBank = userData.bank + amount;
+        // One guarded statement: the bank is credited only in the same write
+        // that debits the wallet, so a failure cannot swallow coins.
+        if (!depositToBank(interaction.user.id, interaction.guild.id, amount)) {
+            const latest = ensureEconomy(interaction.user.id, interaction.guild.id);
+            return interaction.reply({
+                embeds: [
+                    new EmbedBuilder()
+                        .setColor(colors.danger)
+                        .setDescription(`You don't have enough coins. Your wallet: **${latest.balance.toLocaleString()}** coins`)
+                ],
+                ephemeral: true
+            });
+        }
 
-        updateEconomyBalance.run(newBalance, interaction.user.id, interaction.guild.id);
-        updateEconomyBank.run(newBank, interaction.user.id, interaction.guild.id);
+        const updated = ensureEconomy(interaction.user.id, interaction.guild.id);
+        const newBalance = updated.balance;
+        const newBank = updated.bank;
 
         const embed = new EmbedBuilder()
             .setColor(colors.success)
