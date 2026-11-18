@@ -72,6 +72,7 @@ All notable changes to this project are documented here. The format follows
 ### Fixed
 
 HEAD
+HEAD
 - The guild owner is no longer refused by the role-hierarchy guard in `/ban`,
   `/kick`, `/softban`, `/timeout`, `/warn`, and `/role add|remove`. The guard
   compared the caller's highest role position with the target's and refused on
@@ -90,6 +91,14 @@ HEAD
   `withdrawFromBank` and `depositToBank` refuse invalid or over-limit amounts
   without writing, and `tests/economy-bank-atomicity.test.js` fails if either
   command writes the two balances separately again.
+- Prefix commands now apply Discord's `Administrator` bypass. A moderator role
+  that holds only `Administrator` could run `/giveaway start` but got "You do
+  not have permission" from `!giveaway start`, because `hasDefaultPermissions()`
+  compared the role bitfield directly and `discord.js` does not expand the flag.
+  The same gate treated `default_member_permissions: "0"` as unrestricted;
+  Discord defines `"0"` as administrators-only, so it is now enforced that way.
+  The test member double now models `discord.js` instead of answering every
+  permission for an administrator, and regression tests cover both cases.
 - Ticket buttons now re-check the owner/staff rule at every step. The
   confirmation button (`ticket_confirm_close`) previously deleted the channel
   for any participant, and `ticket_claim` accepted any member; both now reuse
