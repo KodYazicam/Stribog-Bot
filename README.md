@@ -90,7 +90,7 @@
 
 ### 🤖 AutoMod System
 - **Anti-Spam** - Prevent message spam
-- **Anti-Link** - Block unwanted links
+- **Anti-Link** - Block unwanted links, including scheme-less hosts Discord turns into clickable links (e.g. `discord.gg/abc`, `www.example.com/path`). Whitelisted domains pass with or without `https://`.
 - **Bad Words Filter** - Filter profanity
 - **Caps Filter** - Prevent excessive caps
 - **Mention Spam** - Block mass mentions
