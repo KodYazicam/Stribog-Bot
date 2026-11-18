@@ -499,6 +499,11 @@ Economy commands are available as slash commands and with the bot prefix
 \* `/shop add` and `/shop remove` have no Discord default but check for
 Administrator at runtime.
 
+`/shop buy` resolves the item's reward role before charging. If the role is
+missing, managed by an integration, higher than the bot's role, or Discord
+rejects the grant, the purchase is refused or the price is refunded — coins are
+never kept for a role the buyer did not receive.
+
 ### Leveling Commands
 
 | Command | Permission | Description | Example |

@@ -71,6 +71,17 @@ All notable changes to this project are documented here. The format follows
 
 ### Fixed
 
+HEAD
+- The guild owner is no longer refused by the role-hierarchy guard in `/ban`,
+  `/kick`, `/softban`, `/timeout`, `/warn`, and `/role add|remove`. The guard
+  compared the caller's highest role position with the target's and refused on
+  equal-or-higher, so an owner whose highest role sat below a member's role —
+  or the default `@everyone` position 0 — could not moderate anyone. A new
+  `src/utils/hierarchy.js` helper exempts only the owner, as Discord does;
+  `Administrator` still does not bypass the hierarchy, and the bot-side
+  `bannable`/`kickable`/`moderatable` and highest-role checks are unchanged.
+  `tests/moderation.test.js` pins both directions (owner allowed, non-owner
+  refused) for all six call sites.
 - `/withdraw` and `/deposit` move coins between the wallet and the bank in a
   single guarded `UPDATE` instead of two independently written statements. A
   failed second write (busy database, full disk, crash) could previously keep
