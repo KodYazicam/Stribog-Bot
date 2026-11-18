@@ -95,6 +95,7 @@
 - **Caps Filter** - Prevent excessive caps
 - **Mention Spam** - Block mass mentions
 - **Edit moderation** - Edited messages are re-checked by the same rules, so a clean message cannot be turned into a blocked link or filtered word after the fact; edits are not counted as new messages for anti-spam
+- **Prefix command arguments** - A message that invokes a prefix command is moderated too: the command name is skipped, but its arguments still pass through anti-link, bad-words, and caps, so `!8ball <link>` cannot bypass a rule.
 - **Audit trail** - Every trigger writes the rule, target, channel, action, and before/after state to `mod_log_channel`. Message content, matched words, and URLs are never logged, and audit delivery continues if the source channel was deleted.
 
 ### 🎮 Fun Commands
@@ -287,7 +288,9 @@ Discord, `Administrator` satisfies every requirement, and a command locked with
 Examples:
 `!balance @user`, `!8ball "Will it work?"`, `!rank`, `!automod status`,
 `!giveaway start "Nitro" 1h 2`. Moderation, ticket, and utility commands remain
-slash-only for now.
+slash-only for now. AutoMod still inspects a prefix command message: the command
+runs and replies first, then its arguments are filtered (the command name itself
+is ignored), so a rule cannot be bypassed by putting the payload in an argument.
 
 `/invite` does **not** request Administrator.
 
