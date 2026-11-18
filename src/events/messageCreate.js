@@ -1,6 +1,6 @@
 const { Events, EmbedBuilder } = require('discord.js');
 const { colors } = require('../config/config');
-const { getUserGuildData, updateUserXP, updateUserLevel, getGuild, insertGuild } = require('../utils/database');
+const { getUserGuildData, insertUserGuildData, updateUserXP, updateUserLevel, getGuild, insertGuild, recordUserMessage } = require('../utils/database');
 const { xpRequiredForLevel, randomXpGain, xpCooldown } = require('../utils/leveling');
 const { handlePrefixMessage, stripPrefixInvocation } = require('../utils/prefix');
 const { logAutoModAction } = require('../utils/automodAudit');
@@ -49,6 +49,18 @@ async function handleLeveling(message, client) {
     const guildData = getGuild.get(message.guild.id);
     if (guildData?.leveling_enabled === 0) return;
 
+    let userData = getUserGuildData.get(message.author.id, message.guild.id);
+
+    if (!userData) {
+        insertUserGuildData.run(message.author.id, message.guild.id);
+        userData = getUserGuildData.get(message.author.id, message.guild.id);
+        if (!userData) return;
+    }
+
+    // Count the message even while the XP cooldown is active: /rank and
+    // /xpleaderboard report messages sent, not XP grants.
+    recordUserMessage.run(message.author.id, message.guild.id);
+
     const key = `${message.guild.id}-${message.author.id}`;
     const now = Date.now();
     const cooldown = xpCooldowns.get(key);
@@ -56,15 +68,6 @@ async function handleLeveling(message, client) {
     if (cooldown && now - cooldown < xpCooldown) return;
 
     xpCooldowns.set(key, now);
-
-    let userData = getUserGuildData.get(message.author.id, message.guild.id);
-
-    if (!userData) {
-        const { insertUserGuildData } = require('../utils/database');
-        insertUserGuildData.run(message.author.id, message.guild.id);
-        userData = getUserGuildData.get(message.author.id, message.guild.id);
-        if (!userData) return;
-    }
 
     const xpGain = randomXpGain();
     const newXP = userData.xp + xpGain;

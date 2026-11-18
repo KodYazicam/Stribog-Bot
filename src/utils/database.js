@@ -245,7 +245,12 @@ const updateGuildSetting = (setting) => {
 
 const getUserGuildData = db.prepare('SELECT * FROM user_guild_data WHERE user_id = ? AND guild_id = ?');
 const insertUserGuildData = db.prepare('INSERT OR IGNORE INTO user_guild_data (user_id, guild_id) VALUES (?, ?)');
-const updateUserGuildXP = db.prepare('UPDATE user_guild_data SET xp = ?, level = ?, messages = messages + 1 WHERE user_id = ? AND guild_id = ?');
+// Every ordinary chat message is counted, whether or not it is eligible for
+// XP; the XP cooldown only gates XP and level-ups.
+const recordUserMessage = db.prepare('UPDATE user_guild_data SET messages = COALESCE(messages, 0) + 1 WHERE user_id = ? AND guild_id = ?');
+
+// Administrator /setxp changes progress only: setting XP is not a sent message.
+const setUserGuildXP = db.prepare('UPDATE user_guild_data SET xp = ?, level = ? WHERE user_id = ? AND guild_id = ?');
 
 const getWarnings = db.prepare('SELECT * FROM warnings WHERE guild_id = ? AND user_id = ? ORDER BY timestamp DESC');
 const addWarning = db.prepare('INSERT INTO warnings (guild_id, user_id, moderator_id, reason, timestamp) VALUES (?, ?, ?, ?, ?)');
@@ -326,7 +331,8 @@ module.exports = {
     GUILD_COLUMNS,
     getUserGuildData,
     insertUserGuildData,
-    updateUserGuildXP,
+    recordUserMessage,
+    setUserGuildXP,
     getWarnings,
     addWarning,
     clearWarnings,
