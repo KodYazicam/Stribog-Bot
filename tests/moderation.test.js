@@ -4,8 +4,10 @@ const { Collection, PermissionFlagsBits } = require('discord.js');
 
 const ban = require('../src/commands/moderation/ban');
 const kick = require('../src/commands/moderation/kick');
+const softban = require('../src/commands/moderation/softban');
 const timeout = require('../src/commands/moderation/timeout');
 const warn = require('../src/commands/moderation/warn');
+const roleCommand = require('../src/commands/moderation/role');
 const warningsCommand = require('../src/commands/moderation/warnings');
 const configCommand = require('../src/commands/admin/config');
 const interactionCreate = require('../src/events/interactionCreate');
@@ -80,6 +82,7 @@ function makeInteraction(command, {
     actor,
     guildId = unique('guild'),
     channelId = unique('channel'),
+    ownerId = null,
     options = {}
 } = {}) {
     const replies = [];
@@ -88,6 +91,7 @@ function makeInteraction(command, {
         guild: {
             id: guildId,
             name: 'Test Guild',
+            ownerId,
             members: { fetch: async () => targetMember },
             channels: { fetch: async () => null }
         },
@@ -105,6 +109,7 @@ function makeInteraction(command, {
             getInteger: name => options[name] ?? null,
             getBoolean: name => options[name] ?? null,
             getAttachment: name => options[name] ?? null,
+            getRole: name => options[name] ?? null,
             getSubcommand: () => options.subcommand ?? null
         },
         replied: false,
@@ -322,6 +327,147 @@ for (const testCase of moderationCommands) {
         }
     });
 }
+
+test('guild owner bypasses the caller hierarchy guard on every member command', async () => {
+    for (const testCase of moderationCommands) {
+        const ownerUser = makeUser(unique('owner'));
+        const actor = makeActor(ownerUser, { position: 1, administrator: false });
+        const target = makeUser(unique('target'));
+        const targetMember = makeMember(target, { position: 50 });
+        const interaction = makeInteraction(testCase.command, {
+            target,
+            targetMember,
+            actor,
+            ownerId: ownerUser.id,
+            options: testCase.options
+        });
+
+        try {
+            await testCase.command.execute(interaction);
+
+            assert.equal(replyTitle(interaction), testCase.successTitle, testCase.label);
+            if (testCase.label === 'warn') {
+                const rows = database.getWarnings.all(interaction.guild.id, target.id);
+                assert.equal(rows.length, 1, 'the owner warning is stored');
+            } else {
+                assert.equal(testCase.actionCalls(targetMember).length, 1, testCase.label);
+            }
+        } finally {
+            database.clearWarnings.run(interaction.guild.id, target.id);
+        }
+    }
+
+    const ownerUser = makeUser(unique('owner'));
+    const actor = makeActor(ownerUser, { position: 1, administrator: false });
+    const target = makeUser(unique('target'));
+    const targetMember = makeMember(target, { position: 50 });
+    const interaction = makeInteraction(softban, {
+        target,
+        targetMember,
+        actor,
+        ownerId: ownerUser.id,
+        options: { days: 1, reason: 'rule 2' }
+    });
+    const banned = [];
+    interaction.guild.members.ban = async id => { banned.push(id); };
+    interaction.guild.members.unban = async () => {};
+
+    await softban.execute(interaction);
+
+    assert.equal(replyTitle(interaction), 'User Softbanned');
+    assert.deepEqual(banned, [target.id]);
+});
+
+test('a non-owner administrator is still bound by the hierarchy', async () => {
+    const moderator = makeUser(unique('mod'));
+    const actor = makeActor(moderator, { position: 1, administrator: true });
+    const target = makeUser(unique('target'));
+    const targetMember = makeMember(target, { position: 50 });
+    const interaction = makeInteraction(ban, {
+        target,
+        targetMember,
+        actor,
+        options: { days: 1, reason: 'rule 3' }
+    });
+
+    await ban.execute(interaction);
+
+    assert.equal(replyDescription(interaction), 'You cannot ban this user. They have equal or higher role than you.');
+    assert.equal(targetMember.banCalls.length, 0);
+});
+
+test('guild owner can add and remove a role above their own position', async () => {
+    const ownerUser = makeUser(unique('owner'));
+    const role = { id: '333333333333333333', name: 'Staff', position: 50 };
+
+    for (const subcommand of ['add', 'remove']) {
+        const actor = makeActor(ownerUser, { position: 1, administrator: false });
+        const targetUser = makeUser(unique('target'));
+        const targetMember = makeMember(targetUser, { position: 1 });
+        targetMember.roles.cache = new Collection(
+            subcommand === 'remove' ? [[role.id, role]] : []
+        );
+        const calls = [];
+        targetMember.roles.add = async value => { calls.push(['add', value.id]); };
+        targetMember.roles.remove = async value => { calls.push(['remove', value.id]); };
+
+        const interaction = makeInteraction(roleCommand, {
+            target: targetUser,
+            targetMember,
+            actor,
+            ownerId: ownerUser.id,
+            options: { subcommand, role }
+        });
+        interaction.guild.members.me = { roles: { highest: { position: 100 } } };
+
+        await roleCommand.execute(interaction);
+
+        assert.equal(replyTitle(interaction), subcommand === 'add' ? 'Role Added' : 'Role Removed');
+        assert.deepEqual(calls, [[subcommand, role.id]]);
+    }
+});
+
+test('a non-owner cannot manage a role at or above their position', async () => {
+    const actor = makeActor(makeUser(unique('mod')), { position: 1, administrator: true });
+    const targetUser = makeUser(unique('target'));
+    const targetMember = makeMember(targetUser, { position: 1 });
+    targetMember.roles.cache = new Collection();
+    const role = { id: '444444444444444444', name: 'Admin', position: 50 };
+    const calls = [];
+    targetMember.roles.add = async value => { calls.push(value.id); };
+
+    const interaction = makeInteraction(roleCommand, {
+        target: targetUser,
+        targetMember,
+        actor,
+        options: { subcommand: 'add', role }
+    });
+    interaction.guild.members.me = { roles: { highest: { position: 100 } } };
+
+    await roleCommand.execute(interaction);
+
+    assert.equal(replyDescription(interaction), 'You cannot manage this role. It is higher than or equal to your highest role.');
+    assert.deepEqual(calls, []);
+});
+
+test('the hierarchy helper treats only the guild owner as exempt', () => {
+    const { isGuildOwner, outranksMember, outranksRole } = require('../src/utils/hierarchy');
+    const memberAt = position => ({ roles: { highest: { position } } });
+
+    assert.equal(isGuildOwner({ guild: { ownerId: '1' }, member: { id: '1' } }), true);
+    assert.equal(isGuildOwner({ guild: { ownerId: '1' }, member: { id: '2' } }), false);
+    assert.equal(isGuildOwner({ guild: {}, member: { id: '2' } }), false);
+
+    const owner = { guild: { ownerId: '1' }, member: { id: '1', ...memberAt(1) } };
+    const moderator = { guild: { ownerId: '1' }, member: { id: '2', ...memberAt(1) } };
+
+    assert.equal(outranksMember(owner, memberAt(50)), true);
+    assert.equal(outranksMember(moderator, memberAt(50)), false);
+    assert.equal(outranksMember(moderator, memberAt(0)), true);
+    assert.equal(outranksRole(owner, { position: 50 }), true);
+    assert.equal(outranksRole(moderator, { position: 50 }), false);
+    assert.equal(outranksRole(moderator, { position: 0 }), true);
+});
 
 test('warnings list shows only the current guild and user rows', async () => {
     const guildId = unique('guild');
