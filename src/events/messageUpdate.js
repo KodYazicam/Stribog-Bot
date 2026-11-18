@@ -1,12 +1,46 @@
 const { Events, EmbedBuilder } = require('discord.js');
 const { colors } = require('../config/config');
 const { getGuild } = require('../utils/database');
+const { handleAutoMod } = require('./messageCreate');
 
 module.exports = {
     name: Events.MessageUpdate,
     async execute(oldMessage, newMessage, client) {
         if (!newMessage.guild || newMessage.author?.bot) return;
+
+        if (oldMessage.partial) {
+            try {
+                oldMessage = await oldMessage.fetch();
+            } catch {
+                oldMessage = { content: null };
+            }
+        }
+        if (newMessage.partial) {
+            try {
+                newMessage = await newMessage.fetch();
+            } catch {
+                return;
+            }
+        }
+
         if (oldMessage.content === newMessage.content) return;
+
+        if (!newMessage.member && newMessage.author?.id) {
+            try {
+                newMessage.member = await newMessage.guild.members.fetch(newMessage.author.id);
+            } catch {
+                // Fall through: handleAutoMod skips members it cannot resolve.
+            }
+        }
+
+        // Edits are moderated before the transcript so a removed message does
+        // not depend on a log channel being configured. Edits never count as
+        // new messages for the anti-spam window: they are not a message burst.
+        try {
+            await handleAutoMod(newMessage, client, { skipAntiSpam: true });
+        } catch (error) {
+            console.error('AutoMod error:', error);
+        }
 
         const guildData = getGuild.get(newMessage.guild.id);
         if (!guildData?.log_channel) return;

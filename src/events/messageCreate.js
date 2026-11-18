@@ -179,7 +179,7 @@ async function writeAutoModAudit(message, details) {
     }
 }
 
-async function handleAutoMod(message, client) {
+async function handleAutoMod(message, client, options = {}) {
     const guildData = getGuild.get(message.guild.id);
     if (!guildData) return;
 
@@ -227,7 +227,7 @@ async function handleAutoMod(message, client) {
         }
     }
 
-    if (guildData.automod_antispam === 1) {
+    if (guildData.automod_antispam === 1 && !options.skipAntiSpam) {
         const key = `${message.guild.id}-${message.author.id}`;
         const now = Date.now();
 
