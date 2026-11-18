@@ -1,5 +1,6 @@
 const { SlashCommandBuilder, EmbedBuilder, PermissionFlagsBits } = require('discord.js');
 const { colors } = require('../../config/config');
+const { outranksRole } = require('../../utils/hierarchy');
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -71,7 +72,7 @@ module.exports = {
                 });
             }
 
-            if (role.position >= interaction.member.roles.highest.position) {
+            if (!outranksRole(interaction, role)) {
                 return interaction.reply({
                     embeds: [
                         new EmbedBuilder()
@@ -152,7 +153,7 @@ module.exports = {
                 });
             }
 
-            if (role.position >= interaction.member.roles.highest.position) {
+            if (!outranksRole(interaction, role)) {
                 return interaction.reply({
                     embeds: [
                         new EmbedBuilder()

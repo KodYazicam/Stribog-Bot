@@ -1,4 +1,4 @@
-const { ApplicationCommandOptionType, EmbedBuilder } = require('discord.js');
+const { ApplicationCommandOptionType, EmbedBuilder, PermissionFlagsBits } = require('discord.js');
 const { colors, prefix: defaultPrefix } = require('../config/config');
 
 // Prefix execution is enabled per command category. Add a category here after
@@ -329,8 +329,9 @@ function requiredDefaultPermission(command) {
     if (raw === null || raw === undefined || raw === '') return null;
 
     try {
-        const bits = BigInt(raw);
-        return bits === 0n ? null : bits;
+        // Keep "0" as 0n: Discord documents it as the administrators-only form,
+        // so it must not collapse into the unrestricted null case.
+        return BigInt(raw);
     } catch {
         return null;
     }
@@ -338,7 +339,15 @@ function requiredDefaultPermission(command) {
 
 function hasDefaultPermissions(command, member) {
     const required = requiredDefaultPermission(command);
-    if (!required) return true;
+    if (required === null) return true;
+
+    // Discord: "Members with the Administrator permission can use all
+    // commands." discord.js reports the role bitfield without expanding the
+    // flag, so the bypass has to be explicit or admins lose prefix access the
+    // identical slash command still has.
+    if (member.permissions?.has(PermissionFlagsBits.Administrator)) return true;
+    if (required === 0n) return false;
+
     return Boolean(member.permissions?.has(required));
 }
 

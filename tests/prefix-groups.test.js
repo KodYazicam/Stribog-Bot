@@ -5,7 +5,7 @@ const { Collection, PermissionFlagsBits } = require('discord.js');
 require('./helpers/test-db');
 const database = require('../src/utils/database');
 const interactionCreate = require('../src/events/interactionCreate');
-const { handlePrefixMessage, parsePrefixCommand } = require('../src/utils/prefix');
+const { handlePrefixMessage, parsePrefixCommand, hasDefaultPermissions } = require('../src/utils/prefix');
 const { DEFAULT_PREFIX, MAX_PREFIX_LENGTH, validatePrefix } = require('../src/config/prefix');
 const { levelFromTotalXp } = require('../src/utils/leveling');
 
@@ -113,7 +113,10 @@ function makeMember(user, { administrator = false, manageGuild = false, roleIds 
         permissions: {
             has: permission => {
                 const value = BigInt(permission);
-                if (administrator) return true;
+                // discord.js does not expand Administrator into other bits:
+                // GuildMember#permissions is the role bitfield, so an
+                // Administrator role answers exactly that one flag.
+                if (value === BigInt(PermissionFlagsBits.Administrator)) return administrator;
                 return manageGuild && value === BigInt(PermissionFlagsBits.ManageGuild);
             }
         }
@@ -438,6 +441,40 @@ test('prefix enforces slash default permissions for admin and giveaway commands'
         });
         assert.equal(giveawayResult.handled, true);
         assert.match(embedOf(giveawayResult.message).description, /do not have permission/);
+    } finally {
+        cleanup(guild.id);
+    }
+});
+
+test('prefix applies the Administrator bypass and the "0" admins-only form', () => {
+    const admin = makeMember(makeUser(numericId()), { administrator: true });
+    const regular = makeMember(makeUser(numericId()));
+
+    // Discord: "Members with the Administrator permission can use all commands."
+    assert.equal(hasDefaultPermissions(giveaway, admin), true);
+    assert.equal(hasDefaultPermissions(giveaway, regular), false);
+
+    // "0" is Discord's documented way to restrict a command to administrators.
+    const locked = { data: { name: 'locked', default_member_permissions: '0' } };
+    assert.equal(hasDefaultPermissions(locked, admin), true);
+    assert.equal(hasDefaultPermissions(locked, regular), false);
+});
+
+test('administrator-only member can start a giveaway with the prefix', async () => {
+    const guild = makeGuild();
+    const user = makeUser(numericId());
+    const member = makeMember(user, { administrator: true });
+    const client = makeClient();
+    const channel = makeChannel();
+
+    try {
+        database.insertGuild.run(guild.id);
+        const { handled, message } = await runPrefix('!giveaway start "Nitro" 1h 2', {
+            user, member, guild, client, channel
+        });
+
+        assert.equal(handled, true);
+        assert.match(embedOf(message).description, /Giveaway started!/);
     } finally {
         cleanup(guild.id);
     }

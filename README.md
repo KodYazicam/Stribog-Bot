@@ -90,10 +90,11 @@
 
 ### 🤖 AutoMod System
 - **Anti-Spam** - Prevent message spam
-- **Anti-Link** - Block unwanted links
+- **Anti-Link** - Block unwanted links, including scheme-less hosts Discord turns into clickable links (e.g. `discord.gg/abc`, `www.example.com/path`). Whitelisted domains pass with or without `https://`.
 - **Bad Words Filter** - Filter profanity
 - **Caps Filter** - Prevent excessive caps
 - **Mention Spam** - Block mass mentions
+- **Edit moderation** - Edited messages are re-checked by the same rules, so a clean message cannot be turned into a blocked link or filtered word after the fact; edits are not counted as new messages for anti-spam
 - **Prefix command arguments** - A message that invokes a prefix command is moderated too: the command name is skipped, but its arguments still pass through anti-link, bad-words, and caps, so `!8ball <link>` cannot bypass a rule.
 - **Audit trail** - Every trigger writes the rule, target, channel, action, and before/after state to `mod_log_channel`. Message content, matched words, and URLs are never logged, and audit delivery continues if the source channel was deleted.
 
@@ -281,7 +282,10 @@ Economy is **per guild**. `/give` is a SQLite transaction. Tickets need a **supp
 Commands in the economy, fun, info, leveling, admin, and giveaway groups work
 with both slash and the configured prefix (default `!`). Prefix and slash share
 the same handler, permissions, and cooldown. Admin and giveaway commands keep
-their Discord default permission requirements on the prefix path too. Examples:
+their Discord default permission requirements on the prefix path too. As on
+Discord, `Administrator` satisfies every requirement, and a command locked with
+`default_member_permissions: 0` stays administrator-only on the prefix path.
+Examples:
 `!balance @user`, `!8ball "Will it work?"`, `!rank`, `!automod status`,
 `!giveaway start "Nitro" 1h 2`. Moderation, ticket, and utility commands remain
 slash-only for now. AutoMod still inspects a prefix command message: the command
@@ -501,6 +505,11 @@ Economy commands are available as slash commands and with the bot prefix
 
 \* `/shop add` and `/shop remove` have no Discord default but check for
 Administrator at runtime.
+
+`/shop buy` resolves the item's reward role before charging. If the role is
+missing, managed by an integration, higher than the bot's role, or Discord
+rejects the grant, the purchase is refused or the price is refunded — coins are
+never kept for a role the buyer did not receive.
 
 ### Leveling Commands
 
@@ -876,7 +885,7 @@ stribog/
     │   ├── interactionCreate.js   # Slash commands, buttons, etc.
     │   ├── messageCreate.js       # Message sent (XP, AutoMod)
     │   ├── messageDelete.js       # Message deleted (logging)
-    │   ├── messageUpdate.js       # Message edited (logging)
+    │   ├── messageUpdate.js       # Message edited (AutoMod, logging)
     │   └── ready.js               # Bot ready
     │
     ├── 📁 buttons/            # Button interaction handlers

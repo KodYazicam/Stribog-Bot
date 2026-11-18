@@ -5,7 +5,7 @@ const { Collection } = require('discord.js');
 require('./helpers/test-db');
 const database = require('../src/utils/database');
 const { handleAutoMod } = require('../src/events/messageCreate');
-const { normalizeHostname, matchesWhitelistedHostname } = require('../src/utils/domains');
+const { normalizeHostname, matchesWhitelistedHostname, extractLinkHostnames } = require('../src/utils/domains');
 const automodCommand = require('../src/commands/admin/automod');
 
 let sequence = 0;
@@ -203,4 +203,86 @@ test('whitelist command removes a previously stored entry', async () => {
     } finally {
         cleanup(guildId);
     }
+});
+
+async function runAntilink({ content, whitelist = [], settings = {} }) {
+    const source = makeChannel();
+    const modlog = makeChannel({ name: 'mod-log' });
+    const guild = makeGuild({ source, modlog });
+    const user = makeUser();
+    const member = makeMember(user);
+
+    configureGuild(guild, modlog, {
+        automod_antilink: 1,
+        automod_whitelist: JSON.stringify(whitelist),
+        ...settings
+    });
+
+    const message = makeMessage({ guild, channel: source, user, member, content });
+
+    try {
+        await handleAutoMod(message);
+        return { message, modlog, guild };
+    } finally {
+        cleanup(guild.id);
+    }
+}
+
+test('antilink deletes a scheme-less invite link Discord renders as clickable', async () => {
+    const { message, modlog } = await runAntilink({ content: 'join discord.gg/abc123 now' });
+
+    assert.equal(message.deleted, true);
+    assert.equal(modlog.sent.length, 1);
+});
+
+test('antilink deletes a scheme-less www host with a path', async () => {
+    const { message, modlog } = await runAntilink({ content: 'see www.evil.example/phish for free nitro' });
+
+    assert.equal(message.deleted, true);
+    assert.equal(modlog.sent.length, 1);
+});
+
+test('antilink keeps a whitelisted host written without a scheme', async () => {
+    const { message, modlog } = await runAntilink({
+        content: 'watch youtube.com/watch?v=1 later',
+        whitelist: ['youtube.com']
+    });
+
+    assert.equal(message.deleted, false);
+    assert.equal(modlog.sent.length, 0);
+});
+
+test('antilink leaves prose, file names and e-mail addresses alone', async () => {
+    const { message, modlog } = await runAntilink({
+        content: 'Node.js 22 ships package.json and README.md; mail user@example.com at 5.30'
+    });
+
+    assert.equal(message.deleted, false);
+    assert.equal(modlog.sent.length, 0);
+});
+
+test('extractLinkHostnames covers scheme and scheme-less links in order', () => {
+    assert.deepEqual(
+        extractLinkHostnames('https://evil.com/a discord.gg/abc www.other.com/b'),
+        ['evil.com', 'discord.gg', 'www.other.com']
+    );
+    assert.deepEqual(extractLinkHostnames('sub.youtube.com/v'), ['sub.youtube.com']);
+    assert.deepEqual(extractLinkHostnames('YouTube.COM/watch?v=1'), ['youtube.com']);
+});
+
+test('extractLinkHostnames trims sentence punctuation', () => {
+    assert.deepEqual(extractLinkHostnames('(see evil.com).'), ['evil.com']);
+});
+
+test('extractLinkHostnames ignores prose, files, e-mail and unknown TLDs', () => {
+    assert.deepEqual(
+        extractLinkHostnames('Node.js package.json README.md user@example.com 5.30 foo.zzz'),
+        []
+    );
+    assert.deepEqual(extractLinkHostnames(''), []);
+    assert.deepEqual(extractLinkHostnames(null), []);
+});
+
+test('extractLinkHostnames keeps an unparseable link so it still counts as blocked', () => {
+    assert.deepEqual(extractLinkHostnames('https://[bad'), ['']);
 });

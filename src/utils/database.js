@@ -179,6 +179,31 @@ const ensureEconomy = (userId, guildId) => {
     return getEconomy.get(userId, guildId);
 };
 
+// Wallet <-> bank moves must be one guarded statement. Writing the wallet and
+// the bank separately let a failed second write mint coins (withdraw kept the
+// credit) or destroy them (deposit lost the debit).
+const withdrawBankStatement = db.prepare(
+    'UPDATE guild_economy SET balance = balance + ?, bank = bank - ? WHERE user_id = ? AND guild_id = ? AND bank >= ?'
+);
+const depositBankStatement = db.prepare(
+    'UPDATE guild_economy SET balance = balance - ?, bank = bank + ? WHERE user_id = ? AND guild_id = ? AND balance >= ?'
+);
+
+function validBankAmount(amount) {
+    return Number.isInteger(amount) && amount > 0;
+}
+
+// Returns false when the amount is invalid or the source side cannot cover it,
+// in which case no row is written at all.
+const moveBank = (statement) => (userId, guildId, amount) => {
+    if (!validBankAmount(amount)) return false;
+    ensureEconomy(userId, guildId);
+    return statement.run(amount, amount, userId, guildId, amount).changes === 1;
+};
+
+const withdrawFromBank = moveBank(withdrawBankStatement);
+const depositToBank = moveBank(depositBankStatement);
+
 const transferCoins = db.transaction((fromId, toId, guildId, amount) => {
     ensureEconomy(fromId, guildId);
     ensureEconomy(toId, guildId);
@@ -293,6 +318,8 @@ module.exports = {
     updateEconomyDaily,
     updateEconomyWork,
     transferCoins,
+    withdrawFromBank,
+    depositToBank,
     getGuild,
     insertGuild,
     updateGuildSetting,

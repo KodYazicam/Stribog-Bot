@@ -4,7 +4,7 @@ const { getUserGuildData, updateUserXP, updateUserLevel, getGuild, insertGuild }
 const { xpRequiredForLevel, randomXpGain, xpCooldown } = require('../utils/leveling');
 const { handlePrefixMessage, stripPrefixInvocation } = require('../utils/prefix');
 const { logAutoModAction } = require('../utils/automodAudit');
-const { matchesWhitelistedHostname } = require('../utils/domains');
+const { matchesWhitelistedHostname, extractLinkHostnames } = require('../utils/domains');
 
 const xpCooldowns = new Map();
 const antiSpamMap = new Map();
@@ -189,7 +189,7 @@ async function writeAutoModAudit(message, details) {
     }
 }
 
-async function handleAutoMod(message, client, { content } = {}) {
+async function handleAutoMod(message, client, { content, skipAntiSpam } = {}) {
     const guildData = getGuild.get(message.guild.id);
     if (!guildData) return;
 
@@ -202,10 +202,9 @@ async function handleAutoMod(message, client, { content } = {}) {
     const text = typeof content === 'string' ? content : (message.content ?? '');
 
     if (guildData.automod_antilink === 1) {
-        const urlRegex = /(https?:\/\/[^\s]+)/gi;
-        const urls = text.match(urlRegex) || [];
+        const hostnames = extractLinkHostnames(text);
 
-        if (urls.length > 0) {
+        if (hostnames.length > 0) {
             let whitelistedDomains = [];
             try {
                 const parsedWhitelist = guildData.automod_whitelist
@@ -218,19 +217,9 @@ async function handleAutoMod(message, client, { content } = {}) {
                 whitelistedDomains = [];
             }
 
-            let blockedUrls = 0;
-            for (const url of urls) {
-                let domain = '';
-                try {
-                    domain = new URL(url).hostname;
-                } catch {
-                    blockedUrls += 1;
-                    continue;
-                }
-                if (!matchesWhitelistedHostname(domain, whitelistedDomains)) {
-                    blockedUrls += 1;
-                }
-            }
+            const blockedUrls = hostnames
+                .filter(hostname => !matchesWhitelistedHostname(hostname, whitelistedDomains))
+                .length;
 
             if (blockedUrls > 0) {
                 const deleted = await safeDelete(message);
@@ -253,7 +242,7 @@ async function handleAutoMod(message, client, { content } = {}) {
         }
     }
 
-    if (guildData.automod_antispam === 1) {
+    if (guildData.automod_antispam === 1 && !skipAntiSpam) {
         const key = `${message.guild.id}-${message.author.id}`;
         const now = Date.now();
 

@@ -28,7 +28,7 @@
 - **Ekonomi:** sunucuya özel bakiye ve banka, günlük ödül, çalışma, güvenli `/give`, market ve sıralama.
 - **Seviye:** mesaj başına XP, `/rank` ve XP sıralaması.
 - **Çekiliş ve ticket:** butonla katılım, otomatik çekiliş/reroll; destek rollü ticket panelleri.
-- **AutoMod:** anti-link, anti-spam, küfür filtresi, büyük harf ve toplu etiket koruması.
+- **AutoMod:** anti-link (şema olmadan yazılan `discord.gg/abc`, `www.example.com` gibi tıklanabilir bağlantılar dahil), anti-spam, küfür filtresi, büyük harf ve toplu etiket koruması.
 - **Loglama:** mesaj, üye, kanal ve moderasyon olaylarını seçtiğiniz kanallara gönderir.
 - **İzin sistemi:** rol bazlı izinler, komutları kanal veya sunucu genelinde kapatma.
 - **Yedekleme ve önek:** `/config export` / `/config import`; ekonomi, eğlence, bilgi, seviye, yönetici ve çekiliş komutları `PREFIX` ile de çalışır.
