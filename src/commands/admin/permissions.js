@@ -9,7 +9,8 @@ const {
     getDisabledCommands,
     isCommandDisabled,
     disableCommand,
-    enableCommand
+    enableCommand,
+    enableCommandInChannel
 } = require('../../utils/database');
 
 module.exports = {
@@ -245,16 +246,36 @@ module.exports = {
             const command = interaction.options.getString('command');
             const channel = interaction.options.getChannel('channel');
 
-            enableCommand.run(interaction.guild.id, command, channel?.id || null);
+            if (channel) {
+                enableCommandInChannel.run(interaction.guild.id, command, channel.id);
+
+                // A channel-scoped enable cannot override a server-wide rule:
+                // the schema has no per-channel allow entry. Say so instead of
+                // claiming the command now works in the channel.
+                const stillDisabled = Boolean(
+                    isCommandDisabled.get(interaction.guild.id, command, null)
+                );
+
+                return interaction.reply({
+                    embeds: [
+                        new EmbedBuilder()
+                            .setColor(stillDisabled ? colors.warning : colors.success)
+                            .setTitle(stillDisabled ? 'Command Still Disabled' : 'Command Enabled')
+                            .setDescription(stillDisabled
+                                ? `\`/${command}\` is still disabled server-wide, so it remains blocked in ${channel}. Run \`/permissions enable command:${command}\` without a channel to re-enable it everywhere.`
+                                : `\`/${command}\` has been enabled in ${channel}`)
+                    ]
+                });
+            }
+
+            enableCommand.run(interaction.guild.id, command);
 
             await interaction.reply({
                 embeds: [
                     new EmbedBuilder()
                         .setColor(colors.success)
                         .setTitle('Command Enabled')
-                        .setDescription(channel 
-                            ? `\`/${command}\` has been enabled in ${channel}`
-                            : `\`/${command}\` has been enabled server-wide`)
+                        .setDescription(`\`/${command}\` has been enabled server-wide`)
                 ]
             });
 

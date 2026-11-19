@@ -456,7 +456,7 @@ ticket, and utility commands remain slash-only for now.
 | `/permissions remove` | Administrator | Remove a role override | `/permissions remove command:ban role:@Member` |
 | `/permissions reset` | Administrator | Reset all rules for a command | `/permissions reset command:ban` |
 | `/permissions disable` | Administrator | Disable a command server-wide or in a channel | `/permissions disable command:meme channel:#general` |
-| `/permissions enable` | Administrator | Re-enable a disabled command | `/permissions enable command:meme channel:#general` |
+| `/permissions enable` | Administrator | Re-enable a command server-wide, or lift one channel's rule | `/permissions enable command:meme` |
 | `/permissions view` | Administrator | View rules for a command | `/permissions view command:ban` |
 | `/permissions list` | Administrator | List all permission overrides | `/permissions list` |
 | `/config export` | Administrator | Download a JSON backup of this server's configuration | `/config export` |
@@ -1039,6 +1039,8 @@ Giveaways store entries in SQLite (`giveaway_entries`). Ending / rerolling does 
 ### How do I disable a feature?
 
 **To disable a command:** Use `/permissions disable command:commandname`
+
+**To re-enable it:** Use `/permissions enable command:commandname` to clear every rule for that command, including channel-scoped ones. Add `channel:#channel` to lift only that channel's rule; a channel-scoped enable cannot override a remaining server-wide disable, and the reply says so.
 
 **To remove a command entirely:**
 1. Delete the command file from `src/commands/`

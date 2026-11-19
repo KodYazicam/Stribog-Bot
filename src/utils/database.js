@@ -304,7 +304,12 @@ const clearCommandPermissions = db.prepare('DELETE FROM command_permissions WHER
 const getDisabledCommands = db.prepare('SELECT * FROM disabled_commands WHERE guild_id = ?');
 const isCommandDisabled = db.prepare('SELECT * FROM disabled_commands WHERE guild_id = ? AND command_name = ? AND (channel_id IS NULL OR channel_id = ?)');
 const disableCommand = db.prepare('INSERT OR IGNORE INTO disabled_commands (guild_id, command_name, channel_id) VALUES (?, ?, ?)');
-const enableCommand = db.prepare('DELETE FROM disabled_commands WHERE guild_id = ? AND command_name = ? AND (channel_id IS NULL OR channel_id = ?)');
+// A server-wide enable must clear every rule for the command, including the
+// channel-scoped ones. A channel-scoped enable must clear only that channel's
+// row: the schema has no per-channel "allow" override, so deleting the
+// server-wide row here would silently lift the disable everywhere.
+const enableCommand = db.prepare('DELETE FROM disabled_commands WHERE guild_id = ? AND command_name = ?');
+const enableCommandInChannel = db.prepare('DELETE FROM disabled_commands WHERE guild_id = ? AND command_name = ? AND channel_id = ?');
 
 module.exports = {
     db,
@@ -375,5 +380,6 @@ module.exports = {
     getDisabledCommands,
     isCommandDisabled,
     disableCommand,
-    enableCommand
+    enableCommand,
+    enableCommandInChannel
 };
