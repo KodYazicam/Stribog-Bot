@@ -270,6 +270,24 @@ test('extractLinkHostnames covers scheme and scheme-less links in order', () => 
     assert.deepEqual(extractLinkHostnames('YouTube.COM/watch?v=1'), ['youtube.com']);
 });
 
+test('extractLinkHostnames recognises abuse-heavy TLDs without a scheme', () => {
+    assert.deepEqual(
+        extractLinkHostnames('join evil.tk or promo.ml or x.ga or y.gq or z.cf now'),
+        ['evil.tk', 'promo.ml', 'x.ga', 'y.gq', 'z.cf']
+    );
+    assert.deepEqual(
+        extractLinkHostnames('evil.pw/a spam.cam/b x.sbs y.rest z.cyou'),
+        ['evil.pw', 'spam.cam', 'x.sbs', 'y.rest', 'z.cyou']
+    );
+});
+
+test('antilink deletes a scheme-less link on an abuse-heavy TLD', async () => {
+    const { message, modlog } = await runAntilink({ content: 'free nitro at evil.tk' });
+
+    assert.equal(message.deleted, true);
+    assert.equal(modlog.sent.length, 1);
+});
+
 test('extractLinkHostnames trims sentence punctuation', () => {
     assert.deepEqual(extractLinkHostnames('(see evil.com).'), ['evil.com']);
 });

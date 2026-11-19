@@ -79,6 +79,16 @@ All notable changes to this project are documented here. The format follows
   setting XP is not a sent message. The admin path now uses a dedicated
   `SET xp = ?, level = ?` statement, and `tests/leveling-counter.test.js` pins
   both behaviours.
+- Anti-link now recognises bare links on abuse-heavy TLDs. `extractLinkHostnames()`
+  accepted a scheme-less host only when its TLD was in the curated `STRONG_TLDS`
+  set, which omitted the Freenom zones (`.tk`, `.ml`, `.ga`, `.gq`, `.cf`) and
+  cheap gTLDs such as `.pw`, `.cam`, `.sbs`, `.rest`, `.cyou`, `.monster`,
+  `.quest`, `.bond`, `.cfd`, `.lol`, `.wiki`, `.work`, `.support`, `.life`,
+  `.world`, `.today`, `.space`, `.website`, `.fun`, `.host`, `.press`, and
+  `.uno`. A message such as `free nitro at evil.tk` was therefore rendered as a
+  clickable link by Discord but kept by AutoMod. `tests/antilink-whitelist.test.js`
+  covers extraction and the `handleAutoMod()` deletion path, and keeps the
+  existing prose/file/e-mail negatives.
 - The guild owner is no longer refused by the role-hierarchy guard in `/ban`,
   `/kick`, `/softban`, `/timeout`, `/warn`, and `/role add|remove`. The guard
   compared the caller's highest role position with the target's and refused on
