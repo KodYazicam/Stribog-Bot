@@ -996,3 +996,72 @@ test('warning rows persist in SQLite and are scoped by guild and user', () => {
 
     assert.equal(database.getWarnings.all(guildId, userId).length, 0);
 });
+
+test('ban: forwards the purge window as deleteMessageSeconds', async () => {
+    const actorUser = makeUser(unique('mod'));
+    const actor = makeActor(actorUser, { position: 50 });
+    const target = makeUser(unique('target'));
+    const targetMember = makeMember(target, { position: 1 });
+    const interaction = makeInteraction(ban, {
+        target,
+        targetMember,
+        actor,
+        options: { days: 2, reason: 'rule 1' }
+    });
+
+    await ban.execute(interaction);
+
+    assert.equal(targetMember.banCalls.length, 1);
+    const payload = targetMember.banCalls[0];
+    assert.equal(payload.deleteMessageSeconds, 2 * 24 * 60 * 60);
+    assert.equal('deleteMessageDays' in payload, false);
+});
+
+test('ban: defaults to zero seconds when the purge window is omitted', async () => {
+    const actorUser = makeUser(unique('mod'));
+    const actor = makeActor(actorUser, { position: 50 });
+    const target = makeUser(unique('target'));
+    const targetMember = makeMember(target, { position: 1 });
+    const interaction = makeInteraction(ban, {
+        target,
+        targetMember,
+        actor,
+        options: { reason: 'rule 2' }
+    });
+
+    await ban.execute(interaction);
+
+    assert.equal(targetMember.banCalls.length, 1);
+    assert.equal(targetMember.banCalls[0].deleteMessageSeconds, 0);
+    assert.equal('deleteMessageDays' in targetMember.banCalls[0], false);
+});
+
+test('softban: forwards the purge window as deleteMessageSeconds', async () => {
+    const actorUser = makeUser(unique('mod'));
+    const actor = makeActor(actorUser, { position: 50 });
+    const target = makeUser(unique('target'));
+    const targetMember = makeMember(target, { position: 1 });
+    const interaction = makeInteraction(softban, {
+        target,
+        targetMember,
+        actor,
+        options: { days: 3, reason: 'spam' }
+    });
+
+    const banCalls = [];
+    const unbanCalls = [];
+    interaction.guild.members.ban = async (userId, payload) => {
+        banCalls.push({ userId, payload });
+    };
+    interaction.guild.members.unban = async (userId, reason) => {
+        unbanCalls.push({ userId, reason });
+    };
+
+    await softban.execute(interaction);
+
+    assert.equal(banCalls.length, 1);
+    assert.equal(banCalls[0].payload.deleteMessageSeconds, 3 * 24 * 60 * 60);
+    assert.equal('deleteMessageDays' in banCalls[0].payload, false);
+    assert.equal(unbanCalls.length, 1);
+    assert.equal(unbanCalls[0].userId, target.id);
+});
