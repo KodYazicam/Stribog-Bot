@@ -2,6 +2,34 @@ const { Events, EmbedBuilder, AuditLogEvent } = require('discord.js');
 const { colors } = require('../config/config');
 const { getGuild } = require('../utils/database');
 
+function baseEmbed(member) {
+    return new EmbedBuilder()
+        .setThumbnail(member.user.displayAvatarURL({ dynamic: true }))
+        .setTimestamp();
+}
+
+function memberField(member) {
+    return { name: 'Member', value: `${member.user.tag} (${member.id})`, inline: true };
+}
+
+function timeoutTimestamp(value) {
+    return value?.getTime?.() ?? null;
+}
+
+async function roleExecutor(guild, member) {
+    try {
+        const auditLogs = await guild.fetchAuditLogs({
+            type: AuditLogEvent.MemberRoleUpdate,
+            limit: 1
+        });
+        const log = auditLogs.entries.first();
+        if (log && log.target.id === member.id && Date.now() - log.createdTimestamp < 5000) {
+            return log.executor;
+        }
+    } catch {}
+    return null;
+}
+
 module.exports = {
     name: Events.GuildMemberUpdate,
     async execute(oldMember, newMember, client) {
@@ -11,22 +39,17 @@ module.exports = {
         const logChannel = await newMember.guild.channels.fetch(guildData.log_channel).catch(() => null);
         if (!logChannel) return;
 
-        const embed = new EmbedBuilder()
-            .setThumbnail(newMember.user.displayAvatarURL({ dynamic: true }))
-            .setTimestamp();
-
         if (oldMember.nickname !== newMember.nickname) {
-            embed
+            const embed = baseEmbed(newMember)
                 .setColor(colors.info)
                 .setTitle('Nickname Changed')
                 .addFields(
-                    { name: 'Member', value: `${newMember.user.tag} (${newMember.id})`, inline: false },
+                    memberField(newMember),
                     { name: 'Before', value: oldMember.nickname || 'None', inline: true },
                     { name: 'After', value: newMember.nickname || 'None', inline: true }
                 );
 
             await logChannel.send({ embeds: [embed] }).catch(() => {});
-            return;
         }
 
         const oldRoles = oldMember.roles.cache;
@@ -36,24 +59,13 @@ module.exports = {
         const removedRoles = oldRoles.filter(role => !newRoles.has(role.id));
 
         if (addedRoles.size > 0) {
-            let executor = null;
-            try {
-                const auditLogs = await newMember.guild.fetchAuditLogs({
-                    type: AuditLogEvent.MemberRoleUpdate,
-                    limit: 1
-                });
-                const log = auditLogs.entries.first();
-                if (log && log.target.id === newMember.id && Date.now() - log.createdTimestamp < 5000) {
-                    executor = log.executor;
-                }
-            } catch {}
-
-            embed
+            const executor = await roleExecutor(newMember.guild, newMember);
+            const embed = baseEmbed(newMember)
                 .setColor(colors.success)
                 .setTitle('Role Added')
                 .addFields(
-                    { name: 'Member', value: `${newMember.user.tag} (${newMember.id})`, inline: true },
-                    { name: 'Role', value: addedRoles.map(r => r.toString()).join(', '), inline: true }
+                    memberField(newMember),
+                    { name: 'Role', value: addedRoles.map(role => role.toString()).join(', '), inline: true }
                 );
 
             if (executor) {
@@ -64,24 +76,13 @@ module.exports = {
         }
 
         if (removedRoles.size > 0) {
-            let executor = null;
-            try {
-                const auditLogs = await newMember.guild.fetchAuditLogs({
-                    type: AuditLogEvent.MemberRoleUpdate,
-                    limit: 1
-                });
-                const log = auditLogs.entries.first();
-                if (log && log.target.id === newMember.id && Date.now() - log.createdTimestamp < 5000) {
-                    executor = log.executor;
-                }
-            } catch {}
-
-            embed
+            const executor = await roleExecutor(newMember.guild, newMember);
+            const embed = baseEmbed(newMember)
                 .setColor(colors.danger)
                 .setTitle('Role Removed')
                 .addFields(
-                    { name: 'Member', value: `${newMember.user.tag} (${newMember.id})`, inline: true },
-                    { name: 'Role', value: removedRoles.map(r => r.toString()).join(', '), inline: true }
+                    memberField(newMember),
+                    { name: 'Role', value: removedRoles.map(role => role.toString()).join(', '), inline: true }
                 );
 
             if (executor) {
@@ -91,25 +92,29 @@ module.exports = {
             await logChannel.send({ embeds: [embed] }).catch(() => {});
         }
 
-        if (oldMember.communicationDisabledUntil !== newMember.communicationDisabledUntil) {
+        if (timeoutTimestamp(oldMember.communicationDisabledUntil) !== timeoutTimestamp(newMember.communicationDisabledUntil)) {
             if (newMember.communicationDisabledUntil) {
-                embed
+                const embed = baseEmbed(newMember)
                     .setColor(colors.warning)
                     .setTitle('Member Timed Out')
                     .addFields(
-                        { name: 'Member', value: `${newMember.user.tag} (${newMember.id})`, inline: true },
-                        { name: 'Until', value: `<t:${Math.floor(newMember.communicationDisabledUntil.getTime() / 1000)}:F>`, inline: true }
+                        memberField(newMember),
+                        {
+                            name: 'Until',
+                            value: `<t:${Math.floor(newMember.communicationDisabledUntil.getTime() / 1000)}:F>`,
+                            inline: true
+                        }
                     );
+
+                await logChannel.send({ embeds: [embed] }).catch(() => {});
             } else {
-                embed
+                const embed = baseEmbed(newMember)
                     .setColor(colors.success)
                     .setTitle('Timeout Removed')
-                    .addFields(
-                        { name: 'Member', value: `${newMember.user.tag} (${newMember.id})`, inline: true }
-                    );
-            }
+                    .addFields(memberField(newMember));
 
-            await logChannel.send({ embeds: [embed] }).catch(() => {});
+                await logChannel.send({ embeds: [embed] }).catch(() => {});
+            }
         }
     }
 };
