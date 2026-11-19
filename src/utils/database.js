@@ -215,6 +215,20 @@ const transferCoins = db.transaction((fromId, toId, guildId, amount) => {
     return true;
 });
 
+// Spending must not be based on a balance read earlier: another command can
+// credit or debit the same row before the write lands (for example while
+// /shop buy awaits roles.fetch). One guarded statement keeps the debit and the
+// affordability check atomic, so a stale read cannot create or destroy coins.
+const chargeEconomyBalance = db.prepare(
+    'UPDATE guild_economy SET balance = balance - ? WHERE user_id = ? AND guild_id = ? AND balance >= ?'
+);
+
+const spendEconomyCoins = (userId, guildId, amount) => {
+    if (!Number.isInteger(amount) || amount <= 0) return false;
+    ensureEconomy(userId, guildId);
+    return chargeEconomyBalance.run(amount, userId, guildId, amount).changes === 1;
+};
+
 // Atomic credit for rewards. A read-modify-write here would lose updates when
 // two rewards land together, so the balance moves inside a single statement.
 const addEconomyCoins = db.transaction((userId, guildId, amount) => {
@@ -323,6 +337,7 @@ module.exports = {
     insertEconomy,
     ensureEconomy,
     addEconomyCoins,
+    spendEconomyCoins,
     updateEconomyBalance,
     updateEconomyBank,
     updateEconomyDaily,
