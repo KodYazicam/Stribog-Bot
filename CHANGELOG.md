@@ -96,6 +96,15 @@ All notable changes to this project are documented here. The format follows
   `BulkBanOptions`, so the next major would have silently purged nothing.
   `tests/moderation.test.js` pins the exact second conversion for ban (0 and 2
   days) and softban (3 days) and rejects the deprecated key.
+- Member update logs now describe exactly one change per embed.
+  `guildMemberUpdate` reused a single `EmbedBuilder` for every entry, so a
+  simultaneous role add/remove produced a `Role Removed` embed with duplicate
+  `Member`/`Role` fields, a nickname edit returned early and silently dropped a
+  role change in the same event, and a timed-out member produced a spurious
+  `Member Timed Out` entry on every unrelated update because two `Date` objects
+  for the same instant compare unequal. Each entry is now built fresh, timeout
+  state is compared by timestamp, and `tests/member-update-log.test.js` covers
+  the nickname, role, timeout and executor paths.
 - The guild owner is no longer refused by the role-hierarchy guard in `/ban`,
   `/kick`, `/softban`, `/timeout`, `/warn`, and `/role add|remove`. The guard
   compared the caller's highest role position with the target's and refused on
