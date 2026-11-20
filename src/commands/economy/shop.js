@@ -1,6 +1,6 @@
 const { SlashCommandBuilder, EmbedBuilder, PermissionFlagsBits, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const { colors } = require('../../config/config');
-const { getShopItems, getShopItem, insertShopItem, deleteShopItem, ensureEconomy, updateEconomyBalance, addEconomyCoins } = require('../../utils/database');
+const { getShopItems, getShopItem, insertShopItem, deleteShopItem, ensureEconomy, spendEconomyCoins, addEconomyCoins } = require('../../utils/database');
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -144,7 +144,20 @@ module.exports = {
                 }
             }
 
-            updateEconomyBalance.run(user.balance - item.price, interaction.user.id, interaction.guild.id);
+            // Charge with one guarded statement. The balance read above is only
+            // a fast pre-check: roles.fetch yields to other commands, so the
+            // debit must re-check affordability inside the same write.
+            if (!spendEconomyCoins(interaction.user.id, interaction.guild.id, item.price)) {
+                const latest = ensureEconomy(interaction.user.id, interaction.guild.id);
+                return interaction.reply({
+                    embeds: [
+                        new EmbedBuilder()
+                            .setColor(colors.danger)
+                            .setDescription(`You no longer have enough coins! You need **${item.price.toLocaleString()}** but only have **${latest.balance.toLocaleString()}**. You have not been charged.`)
+                    ],
+                    ephemeral: true
+                });
+            }
 
             let rewardMessage = '';
             if (role) {

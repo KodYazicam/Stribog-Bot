@@ -115,6 +115,15 @@ All notable changes to this project are documented here. The format follows
   only the matching channel; a channel-scoped enable that cannot override a
   remaining server-wide rule says so instead of claiming success.
   `tests/permissions-enable.test.js` covers both directions.
+- `/shop buy` now charges with one guarded `UPDATE`
+  (`balance = balance - ? ... AND balance >= ?`) after it resolves the reward
+  role. The balance read before `roles.fetch` was only a pre-check, but the
+  charge wrote the absolute `user.balance - item.price`, so a `/give`, `/daily`
+  or `/work` that landed during the fetch was silently overwritten: the probe on
+  `1f3cfd3` created 30 coins and undid a `/give` debit. `spendEconomyCoins`
+  refuses a stale balance without granting the role, and
+  `tests/shop-charge-atomicity.test.js` pins the transfer, reward and
+  drained-balance cases.
 - The guild owner is no longer refused by the role-hierarchy guard in `/ban`,
   `/kick`, `/softban`, `/timeout`, `/warn`, and `/role add|remove`. The guard
   compared the caller's highest role position with the target's and refused on
