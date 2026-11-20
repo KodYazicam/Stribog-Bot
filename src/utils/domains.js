@@ -14,6 +14,12 @@ const STRONG_TLDS = new Set([
     'com', 'net', 'org', 'edu', 'gov', 'mil', 'int', 'info', 'biz',
     'io', 'dev', 'app', 'xyz', 'online', 'site', 'store', 'shop', 'club',
     'live', 'news', 'blog', 'page', 'link', 'click', 'top', 'icu', 'buzz',
+    // Free and cheap zones that spam campaigns rotate through. Bare hosts on
+    // these TLDs are only visible to anti-link through this list, so they are
+    // named explicitly. File-extension TLDs (.zip, .mov) stay out on purpose.
+    'tk', 'ml', 'ga', 'gq', 'cf', 'pw', 'cam', 'sbs', 'rest', 'cyou',
+    'monster', 'quest', 'bond', 'cfd', 'lol', 'wiki', 'work', 'support',
+    'life', 'world', 'today', 'space', 'website', 'fun', 'host', 'press', 'uno',
     'gg', 'tv', 'cc', 'ws', 'fm', 'ly', 'to', 'me', 'co',
     'uk', 'de', 'fr', 'nl', 'eu', 'ru', 'tr', 'br', 'es', 'it', 'pl',
     'se', 'no', 'fi', 'dk', 'ch', 'at', 'be', 'cz', 'gr', 'pt', 'ro',
