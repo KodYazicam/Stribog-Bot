@@ -97,7 +97,12 @@ module.exports = {
                 ]
             }).catch(() => null);
 
-            await member.ban({ deleteMessageDays: days, reason: `${reason} | Banned by ${interaction.user.tag}` });
+            // discord.js v14 expects seconds; deleteMessageDays is deprecated and
+            // only survives through a compatibility shim.
+            await member.ban({
+                deleteMessageSeconds: days * 24 * 60 * 60,
+                reason: `${reason} | Banned by ${interaction.user.tag}`
+            });
 
             const embed = new EmbedBuilder()
                 .setColor(colors.success)

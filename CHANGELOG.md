@@ -89,6 +89,13 @@ All notable changes to this project are documented here. The format follows
   clickable link by Discord but kept by AutoMod. `tests/antilink-whitelist.test.js`
   covers extraction and the `handleAutoMod()` deletion path, and keeps the
   existing prose/file/e-mail negatives.
+- `/ban` and `/softban` send the message-purge window as
+  `deleteMessageSeconds` instead of the deprecated `deleteMessageDays` option.
+  discord.js v14 still translated the old key through a compatibility shim, but
+  it emitted a process-wide deprecation warning and is excluded from
+  `BulkBanOptions`, so the next major would have silently purged nothing.
+  `tests/moderation.test.js` pins the exact second conversion for ban (0 and 2
+  days) and softban (3 days) and rejects the deprecated key.
 - The guild owner is no longer refused by the role-hierarchy guard in `/ban`,
   `/kick`, `/softban`, `/timeout`, `/warn`, and `/role add|remove`. The guard
   compared the caller's highest role position with the target's and refused on

@@ -78,7 +78,8 @@ module.exports = {
 
         try {
             await interaction.guild.members.ban(target.id, {
-                deleteMessageDays: days,
+                // discord.js v14 expects seconds; deleteMessageDays is deprecated.
+                deleteMessageSeconds: days * 24 * 60 * 60,
                 reason: `[Softban] ${reason} | By ${interaction.user.tag}`
             });
 
