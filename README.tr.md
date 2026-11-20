@@ -159,6 +159,8 @@ Ekonomi **sunucuya özeldir**; her sunucunun bakiyesi ayrı tutulur. `/give` tek
 | XP bekleme süresi | 60 saniye |
 | Seviye eğrisi | `100 × 1.5^(seviye - 1)` XP |
 
+Her normal sohbet mesajı, 60 saniyelik XP bekleme süresi dolmamış olsa bile `/rank` ve `/xpleaderboard` içindeki mesaj sayacını artırır; XP ve seviye atlama bu bekleme süresine uymaya devam eder. Prefix komut çağrıları seviye sisteminden önce işlendiği için sayılmaz. `/setxp` yalnızca XP ve seviyeyi değiştirir, mesaj sayacına dokunmaz.
+
 Değerler `src/config/config.js` içindeki `economy` ve `leveling` bölümlerinden değiştirilir; ardından botu yeniden başlatın.
 
 ---

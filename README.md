@@ -519,6 +519,12 @@ never kept for a role the buyer did not receive.
 | `/xpleaderboard` | Everyone | View XP rankings | `/xpleaderboard page:1` |
 | `/setxp` | Administrator | Set a user's XP | `/setxp user:@user xp:1000` |
 
+Every ordinary chat message increments the counter shown as `Messages` by
+`/rank` and as `N messages` by `/xpleaderboard`, even when the 60-second XP
+cooldown is still active; XP and level-ups keep respecting that cooldown.
+Prefix command invocations are consumed before leveling and are not counted.
+`/setxp` changes XP and level only, never the message counter.
+
 ### Giveaway Commands
 
 | Command | Permission | Description | Example |

@@ -71,6 +71,14 @@ All notable changes to this project are documented here. The format follows
 
 ### Fixed
 
+- `/rank` and `/xpleaderboard` now report a real message count. Every ordinary
+  chat message increments `user_guild_data.messages`, including messages sent
+  inside the 60-second XP cooldown, while XP and level-ups still respect the
+  cooldown. Previously nothing on the message path touched the column, so every
+  member showed `Messages: 0`, and `/setxp` incremented it instead even though
+  setting XP is not a sent message. The admin path now uses a dedicated
+  `SET xp = ?, level = ?` statement, and `tests/leveling-counter.test.js` pins
+  both behaviours.
 - The guild owner is no longer refused by the role-hierarchy guard in `/ban`,
   `/kick`, `/softban`, `/timeout`, `/warn`, and `/role add|remove`. The guard
   compared the caller's highest role position with the target's and refused on

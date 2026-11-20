@@ -1,6 +1,6 @@
 const { SlashCommandBuilder, EmbedBuilder, PermissionFlagsBits } = require('discord.js');
 const { colors } = require('../../config/config');
-const { insertUserGuildData, updateUserGuildXP } = require('../../utils/database');
+const { insertUserGuildData, setUserGuildXP } = require('../../utils/database');
 const { levelFromTotalXp } = require('../../utils/leveling');
 
 module.exports = {
@@ -27,7 +27,7 @@ module.exports = {
         insertUserGuildData.run(user.id, interaction.guild.id);
         const level = levelFromTotalXp(xp);
         
-        updateUserGuildXP.run(xp, level, user.id, interaction.guild.id);
+        setUserGuildXP.run(xp, level, user.id, interaction.guild.id);
 
         await interaction.reply({
             embeds: [
