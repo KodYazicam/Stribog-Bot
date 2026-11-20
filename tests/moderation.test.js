@@ -939,7 +939,7 @@ test('dispatcher blocks a command disabled in the channel', async () => {
     try {
         await interactionCreate.execute(interaction, client);
     } finally {
-        database.enableCommand.run(guildId, commandName, channelId);
+        database.enableCommandInChannel.run(guildId, commandName, channelId);
     }
 
     assert.match(replyDescription(interaction), /disabled/);

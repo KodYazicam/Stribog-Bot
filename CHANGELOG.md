@@ -105,6 +105,16 @@ All notable changes to this project are documented here. The format follows
   for the same instant compare unequal. Each entry is now built fresh, timeout
   state is compared by timestamp, and `tests/member-update-log.test.js` covers
   the nickname, role, timeout and executor paths.
+- `/permissions enable` no longer confuses a server-wide re-enable with a
+  channel-scoped one. Both used a single `DELETE ... (channel_id IS NULL OR
+  channel_id = ?)` statement, so enabling the command in one channel also
+  deleted the server-wide rule — making a command that an administrator had
+  disabled everywhere usable in every channel — while a server-wide enable left
+  channel-scoped rules in place and still reported success. `enableCommand` now
+  clears every row for the guild/command and `enableCommandInChannel` clears
+  only the matching channel; a channel-scoped enable that cannot override a
+  remaining server-wide rule says so instead of claiming success.
+  `tests/permissions-enable.test.js` covers both directions.
 - The guild owner is no longer refused by the role-hierarchy guard in `/ban`,
   `/kick`, `/softban`, `/timeout`, `/warn`, and `/role add|remove`. The guard
   compared the caller's highest role position with the target's and refused on
