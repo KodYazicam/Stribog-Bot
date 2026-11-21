@@ -71,6 +71,14 @@ All notable changes to this project are documented here. The format follows
 
 ### Fixed
 
+- `/giveaway reroll` now draws and announces the same number of winners as the
+  giveaway configuration, capped by the number of entries. It previously picked
+  exactly one entry while `endGiveawayNow` honoured `winners`, so a 3-winner
+  giveaway replaced one winner and the public message disagreed with the
+  original. Both paths now share `pickWinners()`, and
+  `tests/giveaway-scope.test.js` covers multi-winner rerolls, the entry cap,
+  single-winner rerolls, and the unchanged end path.
+
 - `/rank` and `/xpleaderboard` now report a real message count. Every ordinary
   chat message increments `user_guild_data.messages`, including messages sent
   inside the 60-second XP cooldown, while XP and level-ups still respect the

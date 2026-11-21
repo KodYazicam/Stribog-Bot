@@ -17,14 +17,14 @@ function descriptionOf(reply) {
     return String(reply?.embeds?.[0]?.data?.description ?? '');
 }
 
-function makeGiveaway({ guildId, messageId = unique('message'), ended = false }) {
+function makeGiveaway({ guildId, messageId = unique('message'), ended = false, winners = 1 }) {
     const channelId = unique('channel');
     database.insertGiveaway.run(
         messageId,
         channelId,
         guildId,
         'Test prize',
-        1,
+        winners,
         Date.now() + 60000,
         unique('host')
     );
@@ -248,6 +248,27 @@ test('giveaway end announces the winners when entries exist', async () => {
     }
 });
 
+test('giveaway end announces every configured winner', async () => {
+    const guildId = unique('guild-a');
+    const { row, messageId } = makeGiveaway({ guildId, winners: 3 });
+    for (let i = 0; i < 4; i += 1) {
+        database.addGiveawayEntry.run(row.id, unique('entry-user'), Date.now());
+    }
+    const { client, calls } = makeClient(messageId);
+    const interaction = makeInteraction({ guildId, subcommand: 'end', messageId });
+
+    try {
+        await giveawayCommand.execute(interaction, client);
+
+        assert.equal(calls.sends.length, 1);
+        const announced = calls.sends[0].content.match(/<@[^>]+>/g) ?? [];
+        assert.equal(announced.length, 3);
+        assert.equal(new Set(announced).size, 3);
+    } finally {
+        cleanup(messageId);
+    }
+});
+
 test('giveaway reroll picks a new winner from the recorded entries', async () => {
     const guildId = unique('guild-a');
     const { row, messageId } = makeGiveaway({ guildId, ended: true });
@@ -260,8 +281,57 @@ test('giveaway reroll picks a new winner from the recorded entries', async () =>
 
         assert.equal(calls.sends.length, 1);
         assert.match(calls.sends[0].content, /Congratulations/i);
+        assert.equal((calls.sends[0].content.match(/<@/g) ?? []).length, 1);
         assert.equal(interaction.replies.length, 1);
         assert.match(descriptionOf(interaction.replies[0]), /Rerolled/i);
+        assert.match(descriptionOf(interaction.replies[0]), /New winner:/);
+    } finally {
+        cleanup(messageId);
+    }
+});
+
+test('giveaway reroll announces every configured winner', async () => {
+    const guildId = unique('guild-a');
+    const { row, messageId } = makeGiveaway({ guildId, ended: true, winners: 3 });
+    for (let i = 0; i < 5; i += 1) {
+        database.addGiveawayEntry.run(row.id, unique('entry-user'), Date.now());
+    }
+    const { client, calls } = makeClient(messageId);
+    const interaction = makeInteraction({ guildId, subcommand: 'reroll', messageId });
+
+    try {
+        await giveawayCommand.execute(interaction, client);
+
+        assert.equal(calls.sends.length, 1);
+        const announced = calls.sends[0].content.match(/<@[^>]+>/g) ?? [];
+        assert.equal(announced.length, 3);
+        assert.equal(new Set(announced).size, 3, 'the three winners must be distinct');
+
+        const reply = descriptionOf(interaction.replies[0]);
+        assert.match(reply, /New winners:/);
+        for (const mention of announced) {
+            assert.ok(reply.includes(mention), `the reply must name ${mention}`);
+        }
+    } finally {
+        cleanup(messageId);
+    }
+});
+
+test('giveaway reroll announces all entries when fewer than the configured winners remain', async () => {
+    const guildId = unique('guild-a');
+    const { row, messageId } = makeGiveaway({ guildId, ended: true, winners: 3 });
+    database.addGiveawayEntry.run(row.id, unique('entry-user'), Date.now());
+    database.addGiveawayEntry.run(row.id, unique('entry-user'), Date.now());
+    const { client, calls } = makeClient(messageId);
+    const interaction = makeInteraction({ guildId, subcommand: 'reroll', messageId });
+
+    try {
+        await giveawayCommand.execute(interaction, client);
+
+        assert.equal(calls.sends.length, 1);
+        const announced = calls.sends[0].content.match(/<@[^>]+>/g) ?? [];
+        assert.equal(announced.length, 2);
+        assert.equal(new Set(announced).size, 2);
     } finally {
         cleanup(messageId);
     }

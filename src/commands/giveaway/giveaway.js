@@ -194,17 +194,19 @@ module.exports = {
                 });
             }
 
-            const winner = entries[Math.floor(Math.random() * entries.length)];
+            const winners = pickWinners(entries, giveaway.winners);
+            const winnerMentions = winners.map(w => `<@${w.user_id}>`).join(', ');
+            const winnerLabel = winners.length === 1 ? 'New winner' : 'New winners';
 
             await channel.send({
-                content: `🎉 Congratulations <@${winner.user_id}>! You won the reroll for **${giveaway.prize}**!`
+                content: `🎉 Congratulations ${winnerMentions}! You won the reroll for **${giveaway.prize}**!`
             });
 
             await interaction.reply({
                 embeds: [
                     new EmbedBuilder()
                         .setColor(colors.success)
-                        .setDescription(`Rerolled! New winner: <@${winner.user_id}>`)
+                        .setDescription(`Rerolled! ${winnerLabel}: ${winnerMentions}`)
                 ],
                 ephemeral: true
             });
@@ -227,6 +229,14 @@ function parseDuration(str) {
     };
 
     return value * multipliers[unit];
+}
+
+// Draw the configured number of distinct winners, capped by the entry count.
+// Used by both the natural/early end path and the reroll path so the announced
+// winner count always matches the giveaway configuration.
+function pickWinners(entries, count) {
+    const shuffled = [...entries].sort(() => Math.random() - 0.5);
+    return shuffled.slice(0, Math.min(count, shuffled.length));
 }
 
 async function endGiveawayNow(client, giveaway) {
@@ -267,8 +277,7 @@ async function endGiveawayNow(client, giveaway) {
         return;
     }
 
-    const shuffled = [...entries].sort(() => Math.random() - 0.5);
-    const winners = shuffled.slice(0, Math.min(giveaway.winners, shuffled.length));
+    const winners = pickWinners(entries, giveaway.winners);
     const winnerMentions = winners.map(w => `<@${w.user_id}>`).join(', ');
 
     await channel.send({
