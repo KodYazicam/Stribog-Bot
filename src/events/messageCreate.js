@@ -357,8 +357,9 @@ async function handleAutoMod(message, client, { content, skipAntiSpam } = {}) {
     if (guildData.automod_mentions === 1) {
         const userMentions = message.mentions.users.size;
         const roleMentions = message.mentions.roles.size;
+        const everyoneMention = message.mentions.everyone === true;
 
-        if (userMentions > 5 || roleMentions > 3) {
+        if (everyoneMention || userMentions > 5 || roleMentions > 3) {
             const deleted = await safeDelete(message);
             const warningPosted = await sendAutoModWarning(
                 message,
@@ -372,7 +373,7 @@ async function handleAutoMod(message, client, { content, skipAntiSpam } = {}) {
                 ],
                 before: 'Mass mention threshold exceeded',
                 after: deleted ? 'Message removed' : 'Message still present',
-                metadata: `Mentions: ${userMentions} users, ${roleMentions} roles`
+                metadata: `Mentions: ${userMentions} users, ${roleMentions} roles${everyoneMention ? ', @everyone/@here' : ''}`
             });
         }
     }
