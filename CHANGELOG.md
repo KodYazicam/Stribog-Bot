@@ -71,6 +71,19 @@ All notable changes to this project are documented here. The format follows
 
 ### Fixed
 
+- Anti-link no longer deletes a whitelisted link just because a sentence ends
+  right after it. `extractLinkHostnames()` trimmed `TRAILING_PUNCTUATION` only
+  from scheme-less hosts, while the `SCHEME_URL_PATTERN` match kept the closing
+  bracket, comma, semicolon or quote. `(see https://youtube.com)` and
+  `https://youtube.com,` therefore parsed as `youtube.com)` / `youtube.com,`,
+  failed `matchesWhitelistedHostname()`, and were removed with a warning even
+  though the README promises whitelisted domains pass "with or without
+  `https://`". The scheme match is now trimmed the same way; a path-level paren
+  such as `https://en.wikipedia.org/wiki/Foo_(bar)` still resolves to
+  `en.wikipedia.org`. `tests/antilink-whitelist.test.js` covers extraction, the
+  end-to-end whitelist pass, and that an unlisted URL followed by punctuation is
+  still blocked.
+
 - `/rank` and `/xpleaderboard` now report a real message count. Every ordinary
   chat message increments `user_guild_data.messages`, including messages sent
   inside the 60-second XP cooldown, while XP and level-ups still respect the

@@ -48,7 +48,10 @@ function extractLinkHostnames(content) {
 
     const hostnames = [];
     const masked = content.replace(SCHEME_URL_PATTERN, (match) => {
-        hostnames.push(hostnameFromCandidate(match));
+        // A scheme URL in prose is usually followed by punctuation that Discord
+        // does not treat as part of the link, e.g. "(https://example.com)".
+        // Trim it before parsing so the hostname still matches a whitelist.
+        hostnames.push(hostnameFromCandidate(match.replace(TRAILING_PUNCTUATION, '')));
         return ' '.repeat(match.length);
     });
 
