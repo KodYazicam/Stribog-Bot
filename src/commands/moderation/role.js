@@ -1,6 +1,6 @@
 const { SlashCommandBuilder, EmbedBuilder, PermissionFlagsBits } = require('discord.js');
 const { colors } = require('../../config/config');
-const { outranksRole } = require('../../utils/hierarchy');
+const { outranksMember, outranksRole } = require('../../utils/hierarchy');
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -83,6 +83,17 @@ module.exports = {
                 });
             }
 
+            if (!outranksMember(interaction, member)) {
+                return interaction.reply({
+                    embeds: [
+                        new EmbedBuilder()
+                            .setColor(colors.danger)
+                            .setDescription('You cannot manage this user. They have equal or higher role than you.')
+                    ],
+                    ephemeral: true
+                });
+            }
+
             if (member.roles.cache.has(role.id)) {
                 return interaction.reply({
                     embeds: [
@@ -159,6 +170,17 @@ module.exports = {
                         new EmbedBuilder()
                             .setColor(colors.danger)
                             .setDescription('You cannot manage this role.')
+                    ],
+                    ephemeral: true
+                });
+            }
+
+            if (!outranksMember(interaction, member)) {
+                return interaction.reply({
+                    embeds: [
+                        new EmbedBuilder()
+                            .setColor(colors.danger)
+                            .setDescription('You cannot manage this user. They have equal or higher role than you.')
                     ],
                     ephemeral: true
                 });
