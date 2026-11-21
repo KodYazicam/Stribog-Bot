@@ -112,7 +112,9 @@ module.exports = {
                     .setDescription('An error occurred while executing this command.')
                     .setTimestamp();
 
-                if (interaction.replied || interaction.deferred) {
+                if (interaction.deferred && !interaction.replied) {
+                    await interaction.editReply({ embeds: [errorEmbed] });
+                } else if (interaction.replied) {
                     await interaction.followUp({ embeds: [errorEmbed], ephemeral: true });
                 } else {
                     await interaction.reply({ embeds: [errorEmbed], ephemeral: true });

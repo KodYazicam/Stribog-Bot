@@ -71,6 +71,15 @@ All notable changes to this project are documented here. The format follows
 
 ### Fixed
 
+- A command that throws after `deferReply()` now completes the deferred reply
+  with `editReply` instead of sending a `followUp`. Every deferring command
+  (`/leaderboard`, `/meme`, `/trivia`, `/clear`, `/ping`, `/weather`, and
+  `/config import`) previously left a permanent "Bot is thinking..." placeholder
+  when it failed, because `interactionCreate` branched on `replied || deferred`
+  and `followUp` does not acknowledge the original interaction.
+  `tests/interaction-defer-error.test.js` covers deferred, replied, and
+  unacknowledged failures.
+
 - `/rank` and `/xpleaderboard` now report a real message count. Every ordinary
   chat message increments `user_guild_data.messages`, including messages sent
   inside the 60-second XP cooldown, while XP and level-ups still respect the
