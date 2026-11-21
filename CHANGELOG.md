@@ -71,6 +71,13 @@ All notable changes to this project are documented here. The format follows
 
 ### Fixed
 
+- `/shop buy` no longer charges for a reward role the member already owns. The
+  role grant is idempotent, so a repeated purchase took the full price without
+  changing the member's roles. The buy path now checks
+  `interaction.member.roles.cache` after resolving the role and before
+  `spendEconomyCoins`, replies ephemerally that the member already has the role,
+  and leaves the balance untouched. `tests/shop-owned-role.test.js` pins the
+  owned-role refusal and the normal purchase path.
 - `/rank` and `/xpleaderboard` now report a real message count. Every ordinary
   chat message increments `user_guild_data.messages`, including messages sent
   inside the 60-second XP cooldown, while XP and level-ups still respect the
