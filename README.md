@@ -93,7 +93,7 @@
 - **Anti-Link** - Block unwanted links, including scheme-less hosts Discord turns into clickable links (e.g. `discord.gg/abc`, `www.example.com/path`). Whitelisted domains pass with or without `https://`.
 - **Bad Words Filter** - Filter profanity
 - **Caps Filter** - Prevent excessive caps
-- **Mention Spam** - Block mass mentions
+- **Mention Spam** - Block mass mentions, including `@everyone` and `@here`
 - **Edit moderation** - Edited messages are re-checked by the same rules, so a clean message cannot be turned into a blocked link or filtered word after the fact; edits are not counted as new messages for anti-spam
 - **Prefix command arguments** - A message that invokes a prefix command is moderated too: the command name is skipped, but its arguments still pass through anti-link, bad-words, and caps, so `!8ball <link>` cannot bypass a rule.
 - **Audit trail** - Every trigger writes the rule, target, channel, action, and before/after state to `mod_log_channel`. Message content, matched words, and URLs are never logged, and audit delivery continues if the source channel was deleted.

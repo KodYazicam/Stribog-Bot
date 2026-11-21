@@ -92,6 +92,7 @@ function makeMessage({
     content = '',
     userMentions = 0,
     roleMentions = 0,
+    everyone = false,
     deleteFails = false
 }) {
     const users = new Collection();
@@ -112,7 +113,7 @@ function makeMessage({
         member,
         guild,
         channel,
-        mentions: { users, roles },
+        mentions: { users, roles, everyone },
         deleted: false,
         async delete() {
             if (deleteFails) throw new Error('Channel is unavailable.');
@@ -291,6 +292,92 @@ test('mentions audits the mention counts', async () => {
         assert.equal(field(embed, 'After'), 'Message removed');
         assert.equal(field(embed, 'Metadata'), 'Mentions: 6 users, 0 roles');
         assert.equal(JSON.stringify(embed).includes('mass mention message'), false);
+    } finally {
+        cleanup(guild.id);
+    }
+});
+
+test('mentions deletes and audits an @everyone ping with no user or role mentions', async () => {
+    const source = makeChannel();
+    const modlog = makeChannel({ name: 'mod-log' });
+    const guild = makeGuild({ source, modlog });
+    const user = makeUser();
+    const member = makeMember(user);
+
+    try {
+        configureGuild(guild, modlog, { automod_mentions: 1 });
+        const message = makeMessage({
+            guild,
+            channel: source,
+            user,
+            member,
+            content: '@everyone hello',
+            everyone: true
+        });
+        await handleAutoMod(message);
+
+        assert.equal(message.deleted, true);
+        const embed = auditEmbed(modlog);
+        assert.equal(embed.title, 'AutoMod: Mass Mentions');
+        assert.match(field(embed, 'Actions'), /Message deleted/);
+        assert.equal(field(embed, 'Before'), 'Mass mention threshold exceeded');
+        assert.equal(field(embed, 'After'), 'Message removed');
+        assert.equal(field(embed, 'Metadata'), 'Mentions: 0 users, 0 roles, @everyone/@here');
+        assert.equal(JSON.stringify(embed).includes('@everyone hello'), false);
+    } finally {
+        cleanup(guild.id);
+    }
+});
+
+test('mentions deletes and audits an @here ping', async () => {
+    const source = makeChannel();
+    const modlog = makeChannel({ name: 'mod-log' });
+    const guild = makeGuild({ source, modlog });
+    const user = makeUser();
+    const member = makeMember(user);
+
+    try {
+        configureGuild(guild, modlog, { automod_mentions: 1 });
+        const message = makeMessage({
+            guild,
+            channel: source,
+            user,
+            member,
+            content: '@here standup',
+            everyone: true
+        });
+        await handleAutoMod(message);
+
+        assert.equal(message.deleted, true);
+        const embed = auditEmbed(modlog);
+        assert.equal(embed.title, 'AutoMod: Mass Mentions');
+        assert.match(field(embed, 'Metadata'), /@everyone\/@here/);
+    } finally {
+        cleanup(guild.id);
+    }
+});
+
+test('mentions leaves @everyone alone when the filter is disabled', async () => {
+    const source = makeChannel();
+    const modlog = makeChannel({ name: 'mod-log' });
+    const guild = makeGuild({ source, modlog });
+    const user = makeUser();
+    const member = makeMember(user);
+
+    try {
+        configureGuild(guild, modlog, { automod_mentions: 0 });
+        const message = makeMessage({
+            guild,
+            channel: source,
+            user,
+            member,
+            content: '@everyone hello',
+            everyone: true
+        });
+        await handleAutoMod(message);
+
+        assert.equal(message.deleted, false);
+        assert.equal(modlog.sent.length, 0);
     } finally {
         cleanup(guild.id);
     }

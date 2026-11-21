@@ -71,6 +71,13 @@ All notable changes to this project are documented here. The format follows
 
 ### Fixed
 
+- The mass-mentions AutoMod rule now covers `@everyone` and `@here`. The check
+  counted only user and role mentions, and discord.js records a server-wide ping
+  in `message.mentions.everyone` instead of the role collection, so an
+  `@everyone` message passed with the filter enabled. The rule now treats the
+  flag as a mass mention, records `@everyone/@here` in the audit metadata
+  without logging the message body, and `tests/automod-audit.test.js` covers
+  both pings plus the disabled-filter case.
 - `/rank` and `/xpleaderboard` now report a real message count. Every ordinary
   chat message increments `user_guild_data.messages`, including messages sent
   inside the 60-second XP cooldown, while XP and level-ups still respect the
