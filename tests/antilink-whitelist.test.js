@@ -292,6 +292,41 @@ test('extractLinkHostnames trims sentence punctuation', () => {
     assert.deepEqual(extractLinkHostnames('(see evil.com).'), ['evil.com']);
 });
 
+test('extractLinkHostnames trims sentence punctuation from scheme URLs', () => {
+    assert.deepEqual(extractLinkHostnames('(see https://youtube.com)'), ['youtube.com']);
+    assert.deepEqual(extractLinkHostnames('watch https://youtube.com, then report'), ['youtube.com']);
+    assert.deepEqual(extractLinkHostnames('"https://youtube.com"'), ['youtube.com']);
+    assert.deepEqual(extractLinkHostnames('https://youtube.com;'), ['youtube.com']);
+    // A closing paren that belongs to the path must not change the hostname.
+    assert.deepEqual(
+        extractLinkHostnames('https://en.wikipedia.org/wiki/Foo_(bar)'),
+        ['en.wikipedia.org']
+    );
+});
+
+test('antilink keeps a whitelisted scheme URL followed by punctuation', async () => {
+    for (const content of [
+        '(see https://youtube.com)',
+        'watch https://youtube.com, then report back',
+        '"https://youtube.com"'
+    ]) {
+        const { message, modlog } = await runAntilink({ content, whitelist: ['youtube.com'] });
+
+        assert.equal(message.deleted, false, content);
+        assert.equal(modlog.sent.length, 0, content);
+    }
+});
+
+test('antilink still deletes an unlisted scheme URL followed by punctuation', async () => {
+    const { message, modlog } = await runAntilink({
+        content: '(see https://evil.example/phish).',
+        whitelist: ['youtube.com']
+    });
+
+    assert.equal(message.deleted, true);
+    assert.equal(modlog.sent.length, 1);
+});
+
 test('extractLinkHostnames ignores prose, files, e-mail and unknown TLDs', () => {
     assert.deepEqual(
         extractLinkHostnames('Node.js package.json README.md user@example.com 5.30 foo.zzz'),
