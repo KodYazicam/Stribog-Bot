@@ -7,6 +7,17 @@ module.exports = {
     async execute(message, client) {
         if (!message.guild || message.author?.bot) return;
 
+        // An uncached message arrives as a partial with no content and no
+        // attachments collection. Try to fetch it; a deleted message is usually
+        // unfetchable, so fall back to logging the fields the event still has.
+        if (message.partial) {
+            try {
+                message = await message.fetch();
+            } catch {
+                // Keep the partial event instead of aborting delete logging.
+            }
+        }
+
         const guildData = getGuild.get(message.guild.id);
         if (!guildData?.log_channel) return;
 
@@ -43,7 +54,7 @@ module.exports = {
             embed.addFields({ name: 'Content', value: content, inline: false });
         }
 
-        if (message.attachments.size > 0) {
+        if (message.attachments?.size > 0) {
             const attachments = message.attachments.map(a => a.url).join('\n');
             embed.addFields({ name: 'Attachments', value: attachments.slice(0, 1024), inline: false });
         }
