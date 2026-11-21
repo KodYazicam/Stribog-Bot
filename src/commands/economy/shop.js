@@ -142,6 +142,19 @@ module.exports = {
                         ephemeral: true
                     });
                 }
+
+                // The grant is idempotent, so re-buying an owned role would
+                // charge the full price and change nothing.
+                if (interaction.member.roles.cache.has(role.id)) {
+                    return interaction.reply({
+                        embeds: [
+                            new EmbedBuilder()
+                                .setColor(colors.info)
+                                .setDescription(`You already have the ${role} role, so you have not been charged.`)
+                        ],
+                        ephemeral: true
+                    });
+                }
             }
 
             // Charge with one guarded statement. The balance read above is only
