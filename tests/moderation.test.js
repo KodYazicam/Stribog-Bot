@@ -403,7 +403,7 @@ test('guild owner can add and remove a role above their own position', async () 
     for (const subcommand of ['add', 'remove']) {
         const actor = makeActor(ownerUser, { position: 1, administrator: false });
         const targetUser = makeUser(unique('target'));
-        const targetMember = makeMember(targetUser, { position: 1 });
+        const targetMember = makeMember(targetUser, { position: 50 });
         targetMember.roles.cache = new Collection(
             subcommand === 'remove' ? [[role.id, role]] : []
         );
@@ -448,6 +448,40 @@ test('a non-owner cannot manage a role at or above their position', async () => 
 
     assert.equal(replyDescription(interaction), 'You cannot manage this role. It is higher than or equal to your highest role.');
     assert.deepEqual(calls, []);
+});
+
+test('a non-owner cannot manage a role for an equal-or-higher ranked member', async () => {
+    for (const subcommand of ['add', 'remove']) {
+        for (const targetPosition of [10, 50]) {
+            const actor = makeActor(makeUser(unique('mod')), { position: 10, administrator: true });
+            const targetUser = makeUser(unique('target'));
+            const targetMember = makeMember(targetUser, { position: targetPosition });
+            const role = { id: '666666666666666666', name: 'Restricted', position: 5 };
+            targetMember.roles.cache = new Collection(
+                subcommand === 'remove' ? [[role.id, role]] : []
+            );
+            const calls = [];
+            targetMember.roles.add = async value => { calls.push(['add', value.id]); };
+            targetMember.roles.remove = async value => { calls.push(['remove', value.id]); };
+
+            const interaction = makeInteraction(roleCommand, {
+                target: targetUser,
+                targetMember,
+                actor,
+                options: { subcommand, role }
+            });
+            interaction.guild.members.me = { roles: { highest: { position: 100 } } };
+
+            await roleCommand.execute(interaction);
+
+            assert.equal(
+                replyDescription(interaction),
+                'You cannot manage this user. They have equal or higher role than you.',
+                `${subcommand} must refuse a target at position ${targetPosition}`
+            );
+            assert.deepEqual(calls, [], `${subcommand} must not mutate roles at position ${targetPosition}`);
+        }
+    }
 });
 
 test('the hierarchy helper treats only the guild owner as exempt', () => {

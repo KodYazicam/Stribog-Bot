@@ -185,6 +185,15 @@ All notable changes to this project are documented here. The format follows
   spaces (`1 + 2`) are accepted again, and malformed input such as `(1+2` is
   rejected instead of producing a partial result.
 
+- `/role add` and `/role remove` now respect the target member's role hierarchy.
+  Both subcommands checked only that the managed role sat below the caller, so a
+  junior moderator could add a role to, or remove a role from, a member whose
+  highest role was above their own — even though `/ban`, `/kick`, `/timeout`, and
+  `/warn` already refused that target. The commands now call `outranksMember()`
+  after the role checks and refuse with the same equal-or-higher wording; the
+  guild owner remains exempt. `tests/moderation.test.js` covers both subcommands
+  for an equal and a higher target, plus the owner path.
+
 ### Security
 
 - Documented the threat model and private vulnerability reporting in `SECURITY.md`.
