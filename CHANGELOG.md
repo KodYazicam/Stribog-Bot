@@ -71,6 +71,13 @@ All notable changes to this project are documented here. The format follows
 
 ### Fixed
 
+- Delete logging no longer throws on an uncached message. `messageDelete.js`
+  read `message.attachments.size` unconditionally, but a message that was never
+  cached arrives as a partial whose `attachments` is `undefined`, so a
+  `TypeError` aborted the delete-log entry before it was sent. The handler now
+  fetches a partial message and falls back to the fields the event still
+  carries, and `tests/message-delete-partial.test.js` covers both the
+  unfetchable partial and the fetchable one.
 - `/rank` and `/xpleaderboard` now report a real message count. Every ordinary
   chat message increments `user_guild_data.messages`, including messages sent
   inside the 60-second XP cooldown, while XP and level-ups still respect the
