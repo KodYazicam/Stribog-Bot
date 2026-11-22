@@ -579,6 +579,8 @@ Prefix command invocations are consumed before leveling and are not counted.
 | `/embed` | Manage Messages | Send a custom embed | `/embed title:Hello description:World channel:#general` |
 | `/invite` | Everyone | Get the bot invite link | `/invite` |
 
+`/poll` and `/embed` reject input that exceeds Discord's embed limits (256-character title, 4096-character description, 2048-character footer) with an ephemeral error instead of failing through the generic handler. Poll questions are capped at 253 characters and each option at 800 characters.
+
 ---
 
 ## ⚙️ Configuration
