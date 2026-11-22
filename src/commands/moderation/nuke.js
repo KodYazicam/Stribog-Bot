@@ -43,6 +43,9 @@ module.exports = {
 
         collector.on('collect', async i => {
             if (i.customId === 'nuke_confirm') {
+                // Acknowledge before cloning: the clone/delete chain can exceed
+                // Discord's 3 second window and would show "This interaction failed".
+                await i.deferUpdate();
                 try {
                     const channel = interaction.channel;
                     const position = channel.position;
@@ -73,6 +76,14 @@ module.exports = {
                     });
                 } catch (error) {
                     console.error('Nuke error:', error);
+                    await i.followUp({
+                        embeds: [
+                            new EmbedBuilder()
+                                .setColor(colors.danger)
+                                .setDescription('Failed to nuke this channel.')
+                        ],
+                        ephemeral: true
+                    }).catch(() => {});
                 }
             } else {
                 await i.update({
