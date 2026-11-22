@@ -1,6 +1,10 @@
 const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
 const { colors } = require('../../config/config');
 
+const QUESTION_MAX_LENGTH = 253;
+const OPTION_MAX_LENGTH = 800;
+const DESCRIPTION_MAX_LENGTH = 4096;
+
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('poll')
@@ -8,26 +12,32 @@ module.exports = {
         .addStringOption(option =>
             option.setName('question')
                 .setDescription('The poll question')
+                .setMaxLength(QUESTION_MAX_LENGTH)
                 .setRequired(true))
         .addStringOption(option =>
             option.setName('option1')
                 .setDescription('First option')
+                .setMaxLength(OPTION_MAX_LENGTH)
                 .setRequired(true))
         .addStringOption(option =>
             option.setName('option2')
                 .setDescription('Second option')
+                .setMaxLength(OPTION_MAX_LENGTH)
                 .setRequired(true))
         .addStringOption(option =>
             option.setName('option3')
                 .setDescription('Third option')
+                .setMaxLength(OPTION_MAX_LENGTH)
                 .setRequired(false))
         .addStringOption(option =>
             option.setName('option4')
                 .setDescription('Fourth option')
+                .setMaxLength(OPTION_MAX_LENGTH)
                 .setRequired(false))
         .addStringOption(option =>
             option.setName('option5')
                 .setDescription('Fifth option')
+                .setMaxLength(OPTION_MAX_LENGTH)
                 .setRequired(false)),
     
     cooldown: 10,
@@ -43,9 +53,23 @@ module.exports = {
 
         const emojis = ['1️⃣', '2️⃣', '3️⃣', '4️⃣', '5️⃣'];
 
+        if (question.length > QUESTION_MAX_LENGTH) {
+            return interaction.reply({
+                content: `The poll question must be ${QUESTION_MAX_LENGTH} characters or fewer.`,
+                ephemeral: true
+            });
+        }
+
         const description = options
             .map((opt, i) => `${emojis[i]} ${opt}`)
             .join('\n\n');
+
+        if (description.length > DESCRIPTION_MAX_LENGTH) {
+            return interaction.reply({
+                content: `The poll options are too long; the combined description must be ${DESCRIPTION_MAX_LENGTH} characters or fewer.`,
+                ephemeral: true
+            });
+        }
 
         const embed = new EmbedBuilder()
             .setColor(colors.primary)

@@ -141,6 +141,8 @@ Slash komutları her zaman kullanılabilir. `PREFIX` (varsayılan `!`) ile ekono
 | Eğlence | `/8ball question:Will I win?` | Everyone |
 | Yardımcı | `/reminder set time:30m message:Meeting` | Everyone |
 
+`/poll` ve `/embed`, Discord'un embed sınırlarını aşan girdiyi (256 karakter başlık, 4096 karakter açıklama, 2048 karakter alt bilgi) genel hata yerine geçici (ephemeral) bir hata mesajıyla reddeder. Anket soruları 253, her seçenek 800 karakterle sınırlıdır.
+
 Komut, alt komut ve seçenek adları Discord'da göründüğü gibi İngilizce kalır. Tüm komutlar, izinleri ve örnekleri için İngilizce [komut referansına](./README.md#-commands) bakın; kayıtlı komutları `npm run commands:list`, doküman uyumunu `npm run docs:check` ile denetleyin.
 
 ---

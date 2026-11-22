@@ -1,6 +1,10 @@
 const { SlashCommandBuilder, EmbedBuilder, PermissionFlagsBits } = require('discord.js');
 const { colors } = require('../../config/config');
 
+const TITLE_MAX_LENGTH = 256;
+const DESCRIPTION_MAX_LENGTH = 4096;
+const FOOTER_MAX_LENGTH = 2048;
+
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('embed')
@@ -8,10 +12,12 @@ module.exports = {
         .addStringOption(option =>
             option.setName('title')
                 .setDescription('Embed title')
+                .setMaxLength(TITLE_MAX_LENGTH)
                 .setRequired(true))
         .addStringOption(option =>
             option.setName('description')
                 .setDescription('Embed description')
+                .setMaxLength(DESCRIPTION_MAX_LENGTH)
                 .setRequired(true))
         .addStringOption(option =>
             option.setName('color')
@@ -28,6 +34,7 @@ module.exports = {
         .addStringOption(option =>
             option.setName('footer')
                 .setDescription('Footer text')
+                .setMaxLength(FOOTER_MAX_LENGTH)
                 .setRequired(false))
         .addChannelOption(option =>
             option.setName('channel')
@@ -45,6 +52,27 @@ module.exports = {
         const image = interaction.options.getString('image');
         const footer = interaction.options.getString('footer');
         const channel = interaction.options.getChannel('channel') || interaction.channel;
+
+        if (title.length > TITLE_MAX_LENGTH) {
+            return interaction.reply({
+                content: `The embed title must be ${TITLE_MAX_LENGTH} characters or fewer.`,
+                ephemeral: true
+            });
+        }
+
+        if (description.length > DESCRIPTION_MAX_LENGTH) {
+            return interaction.reply({
+                content: `The embed description must be ${DESCRIPTION_MAX_LENGTH} characters or fewer.`,
+                ephemeral: true
+            });
+        }
+
+        if (footer && footer.length > FOOTER_MAX_LENGTH) {
+            return interaction.reply({
+                content: `The embed footer must be ${FOOTER_MAX_LENGTH} characters or fewer.`,
+                ephemeral: true
+            });
+        }
 
         let color = colors.primary;
         if (colorInput) {
