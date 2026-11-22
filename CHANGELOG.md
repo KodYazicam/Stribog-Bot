@@ -71,6 +71,15 @@ All notable changes to this project are documented here. The format follows
 
 ### Fixed
 
+- `/nuke` now acknowledges the Confirm button before cloning the channel.
+  The confirmation collector acknowledged only the Cancel branch, so clicking
+  Confirm ran the clone/delete chain without any response and Discord showed
+  "This interaction failed" once the 3 second window passed. The confirm path
+  now calls `deferUpdate()` first and replies with an ephemeral
+  "Failed to nuke this channel." message when the clone or delete throws,
+  instead of only writing to the console. `tests/nuke-confirm.test.js` pins the
+  acknowledgement order and both failure and cancel paths.
+
 - `/rank` and `/xpleaderboard` now report a real message count. Every ordinary
   chat message increments `user_guild_data.messages`, including messages sent
   inside the 60-second XP cooldown, while XP and level-ups still respect the
